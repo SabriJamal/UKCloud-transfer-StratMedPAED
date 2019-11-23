@@ -1,5 +1,11 @@
 #!/bin/bash
 
+##Description - This script is invokved by UKCloud_transfer.py to collect 
+								and transfer sample data to UKCloud. 
+#By: Sabri Jamal                                                                   
+#Date: 20191121                                                                    
+#Version: 1.0
+
 ###########
 ## Input ##
 ###########
