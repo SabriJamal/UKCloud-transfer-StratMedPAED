@@ -18,5 +18,4 @@ All actions taken, such as scanning for completion of blind analysis, UKCloud tr
 The workflow architecture can be found in workflow_diagram folder both as a .png and .graphml (for usage with yED).
 
 ## Credits
-Author: Sabri Jamal
-Centre of Molecular Pathology
+Author: Sabri Jamal, Centre of Molecular Pathology
