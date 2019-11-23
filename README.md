@@ -5,7 +5,7 @@ This repository contains the scripts necessary for the automated UKCloud transfe
 It does not require any installation other than cloning this repository and configuring the YAML config file (see configurations in usage)
 
 ## Configurations
-The YAML config file is used to configure configurations neccessary. Such high level configurations is the:
+The config file is found under the config_file folder. This is a YAML file used to set configurations neccessary to run the script, for example:
 * Sample sheet structure and extension storing sample data
 * Target panel to fetch data from
 * Name of logfile to output a record for each sample
@@ -19,3 +19,4 @@ The workflow architecture can be found in workflow_diagram folder both as a .png
 
 ## Credits
 Author: Sabri Jamal
+Centre of Molecular Pathology
