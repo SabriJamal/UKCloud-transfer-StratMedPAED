@@ -37,13 +37,6 @@ import datetime
 import yaml
 import pdb
 
-##########################
-## TODO FUTURE UPDATES  ##
-##########################
-#- Hashed out (samples) lines need to be able to be handled in the future.
-# 	Although this should not create  an issue as the  transfers should be done
-# 	daily.
-
 class UKCloud(object):
 	##Class attribute
 	config = None
