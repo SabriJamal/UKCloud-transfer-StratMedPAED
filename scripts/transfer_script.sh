@@ -87,7 +87,7 @@ source activate UKcloud
 if [[ -d $destination_path ]];
 then
 	printf "\nTransferring $destination_path to UKCloud...\n"
-	s3cmd put $destination_path --recursive s3://smpaeds/CMP/
+	s3cmd put $destination_path --recursive s3://smpaeds/CMP/lc-WGS/
 	rm -rf $destination_path
 	printf "\nTransfer succesful, deleting local copy $destination_path\n"
 fi
@@ -96,5 +96,5 @@ fi
 if [[ -f $transfer_log_file ]];
 then
 	printf "\nTransferring $transfer_log_file to UKCloud\n"
-	s3cmd put $transfer_log_file s3://smpaeds/CMP/
+	s3cmd put $transfer_log_file s3://smpaeds/CMP/lc-WGS/
 fi
