@@ -2,8 +2,8 @@
 #               for the UKCloud transfer automated transfer script originally
 #               developed for the StratMed PAEDs project.
 
-#By: Sabri Jamal                                                           
-#Date: 20191121                                                            
+#By: Sabri Jamal
+#Date: 20191121
 #Version: 1.0
 
 #Sample sheet columns
@@ -29,4 +29,4 @@ file_system_objects:
   sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets
   logfile_dest_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud
   analysis_reports_folder: Reports
-  uk_cloud_transfer_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud/transfer_script.sh
+  uk_cloud_transfer_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script.sh
