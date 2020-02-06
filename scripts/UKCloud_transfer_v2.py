@@ -35,7 +35,7 @@ import re
 import subprocess as subp
 import datetime
 import yaml
-import pdb
+import pdb;pdb.set_trace()
 
 class UKCloud(object):
 	##Class attribute
@@ -277,9 +277,11 @@ class UKCloud(object):
 
 			##Check that analysed on PAEDs panel to target only SMPaeds sample
 			#second level of security
-			if(allowed_panels[0] not in ss_dict[bed_col] or allowed_panels[1] not in ss_dict[bed_col]):
-				continue #skip non target (PAED) samples. Covers WES PAEDs
-						 #as well
+			panel1 = set([allowed_panels[0]]) & set(ss_dict[bed_col]) #PAED
+			panel2 = set([allowed_panels[1]]) & set(ss_dict[bed_col]) #Exome
+			comb_cond = len(panel1) + len(panel2)
+			if(comb_cond == 0):
+				continue #skip if ss does not contain any of the targets
 			else:
 				#Store header as list by converting from dict.key obj to
 				#list obj to access index
@@ -298,20 +300,25 @@ class UKCloud(object):
 				# NOTE! Exomes can be sequenced with either only baseline or tumour condition can't wait for match!
 				tumour_ind = [i for i, samp_type in enumerate(ss_dict[sample_type[0]]) if(samp_type.lower() == "tumour") ]
 
+				#Select all indexes on PAEDs panel
+				panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[0].lower()) ]
+
 				##Locate indexes for all exomes
 				# NOTE! Add case specific name for exome and keep current set up in place
 				# NOTE! One example of location to add conditional to skip sample sheet with 'other' column set to qc_run (catch exception though!!)
-				exome_ind = [i for i, exome_bed in enumerate(ss_dict[allowed_panels[1]]) if(allowed_panels.lower() == "idtExome".lower() )]
+				exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
 
-				##Select only tumour samples i.e. find intersect from sample
+				##Select only tumour samples on PAED panel i.e. find intersect from sample
 				#sheet to avoid duplicates in ready to transfer file
-				target_ind = set(target_ind) & set(tumour_ind)
+				target_ind_panel = set(target_ind) & set(panel_ind)
+				target_ind_panel = set(target_ind_panel) & set(tumour_ind)
 
+				#Select exomes indexes
 				target_ind_exome = set(target_ind) & set(exome_ind)
 
 			##Fetch panel data to be written to ready to transfer file
-			if(len(target_ind) != 0):
-				for ind in target_ind:
+			if(len(target_ind_panel) != 0):
+				for ind in target_ind_panel:
 					sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
 					sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
 					sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
@@ -331,7 +338,11 @@ class UKCloud(object):
 			# NOTE! ANOTHER example of location to add conditional to skip sample sheet with 'other' column set to qc_run (catch exception though!!)
 			if(len(target_ind_exome) != 0):
 				for ind in target_ind_exome:
-					sample_check_if_qc = ss_dict.get(wild_card_col[0])[ind]
+
+					try:
+						sample_check_if_qc = ss_dict.get(wild_card_col[0])[ind]
+					except TypeError:
+						sample_check_if_qc = None #column does not exist
 
 					##Ignore duplicate analysis due to qc
 					if(sample_check_if_qc == "qc_run"):
@@ -349,8 +360,11 @@ class UKCloud(object):
 						# NOTE! This is where generic name needs to be tested if either normal or tumour by looking at tag column in SS
 						if(sample_tag_generic.lower() == "tumour" or sample_tag_generic.lower() == "tumor"):
 							moldx_sample_t_list.append(match_moldx_generic.group(1))
+							moldx_sample_b_list.append("Exome")
+
 						elif(sample_tag_generic.lower() == "normal"):
-							moldx_sample_b_list.append(match_moldx_b.group(1))
+							moldx_sample_t_list.append("Exome")
+							moldx_sample_b_list.append(match_moldx_generic.group(1))
 					else:
 						prompt="{ts} - WARNING; Exome sample name {tumour} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
 
@@ -608,7 +622,7 @@ def main(argv):
 		uk_cloud_obj = UKCloud(config_file)
 		glob_sample_sheet_dict = uk_cloud_obj.parse_sample_sheets()
 		uk_cloud_obj.write_dict_to_file(glob_sample_sheet_dict)
-		uk_cloud_obj.transfer_UKCloud()
+		#uk_cloud_obj.transfer_UKCloud()
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
