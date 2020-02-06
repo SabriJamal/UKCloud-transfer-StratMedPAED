@@ -19,7 +19,7 @@ sample-sheet:
 #Panels to be checked for transfer
 panels:
   paediatric: PAED2
-  exome: idtExome
+  exome: IDTExome
 
 #Log file tracking record of changes
 log_files:
@@ -28,7 +28,8 @@ log_files:
 #All file system objects incl files & folders
 file_system_objects:
   analysis_folder_root_path: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports
-  sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets
+  #sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets
+  sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets/Test_SS_UKCloud 
   logfile_dest_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud
   analysis_reports_folder: Reports
   uk_cloud_transfer_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script.sh
