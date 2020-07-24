@@ -47,10 +47,8 @@ mkdir $destination_path/Alignments
 cp $data_report_path/$pool/Alignments/*$trial_id* $destination_path/Alignments/.
 
 #CNVs
-mkdir -p $destination_path/CNVs/CNV_V2
-mkdir -p $destination_path/CNVs/CNVkit
-cp -r $data_analysis_path/$pool/CNVs/CNV_V2/*$trial_id*/* $destination_path/CNVs/CNV_V2/.
-cp -r $data_analysis_path/$pool/CNVs/CNVkit/*$trial_id*/* $destination_path/CNVs/CNVkit/.
+mkdir -p $destination_path/CNVs
+cp -r $data_analysis_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
 
 #Reports
 mkdir -p $destination_path/Reports/Germline
@@ -60,7 +58,7 @@ cp $data_report_path/$pool_germ/Variants/$sample_b-$trial_id-B/$sample_b-$trial_
 cp $data_report_path/$pool/Reports/$sample_t-$trial_id-T.patient.report $destination_path/Reports/Somatic/.
 cp $data_report_path/$pool_germ/Reports/$sample_b-$trial_id-B.patient.report $destination_path/Reports/Germline/.
 cp $data_report_path/$pool/SVs/$sample_b-$trial_id-B/$sample_t-$trial_id-T.SV.report $destination_path/Reports/Somatic/.
-cp $data_report_path/$pool/CNVs/$sample_t-$trial_id-T.cnv.report $destination_path/Reports/Somatic/.
+cp $data_report_path/$pool/CNVs/$sample_t-$trial_id-T/$sample_t-$trial_id-T.cnv.report $destination_path/Reports/Somatic/.
 
 #SVs 
 mkdir -p $destination_path/SVs/Manta
