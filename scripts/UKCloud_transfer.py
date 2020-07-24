@@ -270,9 +270,8 @@ class UKCloud(object):
 
 								del ss_dict[column_key][index]
 					else:
-						prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Skipping reading of entire sample sheet {ss_sheet}".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
+						prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Possible tumour only sample?".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
 						print(prompt)
-						continue #Skip
 
 			except UnboundLocalError:
 				prompt = "{ts} - WARNING; Log file tracking succesfuly transferred samples not found, no samples will be skipped.".format(ts=str(datetime.datetime.now()))
