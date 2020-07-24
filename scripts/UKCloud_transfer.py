@@ -35,7 +35,7 @@ import re
 import subprocess as subp
 import datetime
 import yaml
-import pdb
+import pdb;pdb.set_trace()
 
 class UKCloud(object):
 	##Class attribute
@@ -189,11 +189,12 @@ class UKCloud(object):
 	# containing new samples to be scanned for sending.
 	def write_dict_to_file(self, glob_ss_dict):
 		##Instantiate static variables
-		allowed_panels = [ UKCloud.config['panels']['paediatric'] ]
+		allowed_panels = [ UKCloud.config['panels']['paediatric'], UKCloud.config['panels']['exome'] ]
 		bed_col = UKCloud.config['sample-sheet']['bedfile_col']
 		seq_pool_id = [ UKCloud.config['sample-sheet']['pool_id_col'] ]
 		sample_name_col = [ UKCloud.config['sample-sheet']['sample_name_col'] ]
 		sample_pair_name_col = [ UKCloud.config['sample-sheet']['sample_pair_name_col'] ]
+		wild_card_col = [ UKCloud.config['sample-sheet']['wild_card_col'] ]
 		sample_type = [ UKCloud.config['sample-sheet']['sample_type'] ]
 		ready_to_send = UKCloud.config['log_files']['transfer_log']
 		output_path = UKCloud.config['file_system_objects']['logfile_dest_path']
@@ -216,7 +217,7 @@ class UKCloud(object):
 
 		##Create output file with header if doesn't exist
 		if(not os.path.exists(ready_log_abs_path)):
-			header = "Pool\tTrial_ID\tTumour\tBaseline\tCheck1\tDate_Check1\tCheck2\tGermline\tDate_Germline\tUKCloud\tDate_UKCloud\n"
+			header = "Pool\tTrial_ID\tTumour\tBaseline\tCheck1\tDate_Check1\tCheck2\tGermline\tDate_Germline\tUKCloud\tDate_UKCloud\tExome_UKCloud\n"
 			with open( os.path.join(ready_log_abs_path), "w") as ready_IN:
 				ready_IN.write(header)
 
@@ -245,7 +246,7 @@ class UKCloud(object):
 			pool_id = pool.split(".")[0]
 
 			try:
-				#Exclude samples succesfully transferred to UKCloud
+				# Controls samples to only be logged once in transfer log file
 				if(pool_id in succ_transf_dict.keys()):
 					#Compare tumour/germline id from file with dict and delete entry
 					# if exists
@@ -263,11 +264,6 @@ class UKCloud(object):
 						for column_key, value_list in ss_dict.items():
 							for index in sorted(del_inds, reverse=True):
 
-								#Empty columns are skipped in sample sheet as they are expected
-								# to be trailing commas in csv doc
-								if(column_key == ""):
-									continue
-
 								del ss_dict[column_key][index]
 					else:
 						prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Skipping reading of entire sample sheet {ss_sheet}".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
@@ -281,8 +277,11 @@ class UKCloud(object):
 
 			##Check that analysed on PAEDs panel to target only SMPaeds sample
 			#second level of security
-			if(allowed_panels[0] not in ss_dict[bed_col]):
-				continue #skip non target (PAED) samples
+			panel1 = set([allowed_panels[0]]) & set(ss_dict[bed_col]) #PAED
+			panel2 = set([allowed_panels[1]]) & set(ss_dict[bed_col]) #Exome
+			comb_cond = len(panel1) + len(panel2)
+			if(comb_cond == 0):
+				continue #skip if ss does not contain any of the targets
 			else:
 				#Store header as list by converting from dict.key obj to
 				#list obj to access index
@@ -298,15 +297,28 @@ class UKCloud(object):
 				target_ind = [i for i, sample in enumerate(ss_dict[sample_name_col[0]]) if(re.search("-SMP\d+-", sample))]
 
 				##Locate indexes for all tumour samples
+				# NOTE! Exomes can be sequenced with either only baseline or tumour condition can't wait for match!
 				tumour_ind = [i for i, samp_type in enumerate(ss_dict[sample_type[0]]) if(samp_type.lower() == "tumour") ]
 
-				##Select only tumour samples i.e. find intersect from sample
-				#sheet to avoid duplicates in ready to transfer file
-				target_ind = set(target_ind) & set(tumour_ind)
+				#Select all indexes on PAEDs panel
+				panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[0].lower()) ]
 
-			##Fetch data to be written to ready to transfer file
-			if(len(target_ind) != 0):
-				for ind in target_ind:
+				##Locate indexes for all exomes
+				# NOTE! Add case specific name for exome and keep current set up in place
+				# NOTE! One example of location to add conditional to skip sample sheet with 'other' column set to qc_run (catch exception though!!)
+				exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
+
+				##Select only tumour samples on PAED panel i.e. find intersect from sample
+				#sheet to avoid duplicates in ready to transfer file
+				target_ind_panel = set(target_ind) & set(panel_ind)
+				target_ind_panel = set(target_ind_panel) & set(tumour_ind)
+
+				#Select exomes indexes
+				target_ind_exome = set(target_ind) & set(exome_ind)
+
+			##Fetch panel data to be written to ready to transfer file
+			if(len(target_ind_panel) != 0):
+				for ind in target_ind_panel:
 					sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
 					sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
 					sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
@@ -322,6 +334,40 @@ class UKCloud(object):
 					else:
 						prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
 
+			##Fetch exome data to be written to ready to transfer file
+			# NOTE! ANOTHER example of location to add conditional to skip sample sheet with 'other' column set to qc_run (catch exception though!!)
+			if(len(target_ind_exome) != 0):
+				for ind in target_ind_exome:
+
+					try:
+						sample_check_if_qc = ss_dict.get(wild_card_col[0])[ind]
+					except TypeError:
+						sample_check_if_qc = None #column does not exist
+
+					##Ignore duplicate analysis due to qc
+					if(sample_check_if_qc == "qc_run"):
+						continue
+
+					sample_moldx_generic = ss_dict.get(sample_name_col[0])[ind]
+					sample_tag_generic = ss_dict.get(sample_type[0])[ind]
+					match_moldx_generic = re.search("(\d+)-SMP\d+", sample_moldx_generic)
+					match_trial_id = re.search("\d+-(SMP\d+)",sample_moldx_generic)
+
+					if(match_moldx_generic and match_trial_id):
+						pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
+						trial_id_list.append(match_trial_id.group(1))
+
+						# NOTE! This is where generic name needs to be tested if either normal or tumour by looking at tag column in SS
+						if(sample_tag_generic.lower() == "tumour" or sample_tag_generic.lower() == "tumor"):
+							moldx_sample_t_list.append(match_moldx_generic.group(1))
+							moldx_sample_b_list.append("Exome")
+
+						elif(sample_tag_generic.lower() == "normal"):
+							moldx_sample_t_list.append("Exome")
+							moldx_sample_b_list.append(match_moldx_generic.group(1))
+					else:
+						prompt="{ts} - WARNING; Exome sample name {tumour} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+
 		##Write data to ready to transfer file
 		with open( os.path.join(ready_log_abs_path), "a") as ready_IN:
 			equal_tot_length = len(pool_id_list) #used as template as all should be equal sized
@@ -333,6 +379,7 @@ class UKCloud(object):
 	# It prepares a subprocess call for each line that is scanned to be ready for
 	# transferring after confirming that checker 2 has been done. It will also update
 	# the log file written by write_dict_to_file.
+	#NOTE! continue from here if needed!
 	def transfer_UKCloud(self):
 		##Instantiate static variables
 		analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
@@ -575,7 +622,7 @@ def main(argv):
 		uk_cloud_obj = UKCloud(config_file)
 		glob_sample_sheet_dict = uk_cloud_obj.parse_sample_sheets()
 		uk_cloud_obj.write_dict_to_file(glob_sample_sheet_dict)
-		uk_cloud_obj.transfer_UKCloud()
+		#uk_cloud_obj.transfer_UKCloud()
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
