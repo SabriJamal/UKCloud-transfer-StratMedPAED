@@ -264,6 +264,11 @@ class UKCloud(object):
 						for column_key, value_list in ss_dict.items():
 							for index in sorted(del_inds, reverse=True):
 
+								#Empty columns are skipped in sample sheet as they are expected
+								# to be trailing commas in csv doc
+								if(column_key == ""):
+									continue
+
 								del ss_dict[column_key][index]
 					else:
 						prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Skipping reading of entire sample sheet {ss_sheet}".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
