@@ -1,4 +1,3 @@
-
 #################
 ## Description ##
 #################
@@ -20,7 +19,7 @@
 # this script.
 
 #By: Sabri Jamal
-#Date: 20191121
+#Date: 26/07-2020
 #Version: 2.0
 
 ##------------------------------------------------------------------------------------------------------------------------------------------##
@@ -39,8 +38,25 @@ import yaml
 class UKCloud(object):
     ##Class attribute
     config = None
-    transfer_log_header = "Pool\tTrial_ID\tTumour\tBaseline\tType\tCheck1\tDate_Check1\tCheck2\tGermline\tDate_Germline\tUKCloud\tDate_UKCloud\tDate_Exome_UKCloud\n"
-
+    transfer_log_header = "Pool\tTrial_ID\tTumour\tBaseline\tType\tCheck1\tDate_Check1\tCheck2\tGermline\tDate_Germline\tUKCloud\tDate_UKCloud\n"
+    
+    #Update once exomes ready
+    #transfer_log_header = "Pool\tTrial_ID\tTumour\tBaseline\tType\tCheck1\tDate_Check1\tCheck2\tGermline\tDate_Germline\tUKCloud\tDate_UKCloud\tDate_Exome_UKCloud\n"
+    
+    #Transfer log header labels
+    t_log_header_pool = [transfer_log_header.split("\t")[0], 0]
+    t_log_header_trialID = [transfer_log_header.split("\t")[1], 1]
+    t_log_header_tumour = [transfer_log_header.split("\t")[2], 2]
+    t_log_header_baseline = [transfer_log_header.split("\t")[3], 3]
+    t_log_header_type = [transfer_log_header.split("\t")[4], 4]
+    t_log_header_check1 = [transfer_log_header.split("\t")[5], 5]
+    t_log_header_date_check1 = [transfer_log_header.split("\t")[6], 6]
+    t_log_header_check2 = [transfer_log_header.split("\t")[7], 7]
+    t_log_header_germline = [transfer_log_header.split("\t")[8], 8]
+    t_log_header_date_germline = [transfer_log_header.split("\t")[9], 9]
+    t_log_header_ukcloud = [transfer_log_header.split("\t")[10], 10]
+    t_log_header_date_ukcloud = [transfer_log_header.split("\t")[11], 11]
+    
     def __init__(self, config_file):
         #Instanciation vars
         self.config_file = config_file
@@ -50,7 +66,17 @@ class UKCloud(object):
     def load_config(self, config_file):
         with open(config_file, "r") as IN_config:
             UKCloud.config = yaml.load(IN_config)
+            
+    def write_dict2line(self, line_dict):
+        tsv_line = ""
+        for index, transfer_log_header_item in enumerate(re.split("\t",self.transfer_log_header)):
+            if(index == 0):
+                tsv_line = str(line_dict[transfer_log_header_item])
+            else:
+                tsv_line = tsv_line + "\t" + str(line_dict[transfer_log_header_item])
 
+        return(tsv_line)
+             
     #Function load succesfully transferred samples into dict. Dict is used
     #to determine which samples to skip within func write_dict_to_file
     def load_file_as_3lvl_nested_dict(self, succesful_transfers_file):
@@ -409,8 +435,6 @@ class UKCloud(object):
     ##Picks up the ready to transfer file created by write_dict_to_file.
     # It prepares a subprocess call for each line that is scanned to be ready for
     # transferring after confirming that checker 2 has been done. It will also update
-    # the log file written by write_dict_to_file.
-    #NOTE! continue from here if needed!
     def transfer_UKCloud(self):
         ##Instantiate static variables
         analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
@@ -427,77 +451,128 @@ class UKCloud(object):
         ready_to_transfer_file_tmp = ready_to_transfer_file + ".tmp"
         new_line = "" ##Line to store updated data
 
-        ##Create output file with header if doesn't exist
+        ## Create output file with header if doesn't exist
+        #=================================================
         if(not os.path.exists(ready_to_transfer_file_tmp)):
             with open( os.path.join(ready_to_transfer_file_tmp), "w") as ready_IN:
                 ready_IN.write(self.transfer_log_header)
 
+        ## Scan each column for each line in transfer log and set boolean
+        # to be used to determine action
+        #===============================================================
         with open(ready_to_transfer_file_tmp, "a") as ready_OUT:
             with open(ready_to_transfer_file, "r") as ready_IN:
                 for line in ready_IN:
+                    line = line.rstrip()
+                    match = re.split("\t", line)
+                    line_dict = {}
 
                     #Skip header
                     if(header):
+                        for header_item in match:
+                            line_dict[header_item] = ""
                         header = False
                         continue
 
-                    #Read data
-                    line = line.rstrip()
-                    match = re.split("\t", line)
-                    pool_id = match[0]
-                    trial_id = match[1]
-                    sample_id_t = match[2]
-                    sample_id_b = match[3]
-                    new_line = pool_id + "\t" + trial_id + "\t" + sample_id_t + "\t" + sample_id_b
+                    #Read data and update line dict used to update transfer log
+                    line_dict[self.t_log_header_pool[0]] = match[self.t_log_header_pool[1]]
+                    line_dict[self.t_log_header_trialID[0]] = match[self.t_log_header_trialID[1]]
+                    line_dict[self.t_log_header_tumour[0]] = match[self.t_log_header_tumour[1]]
+                    line_dict[self.t_log_header_baseline[0]] = match[self.t_log_header_baseline[1]]
+                    
+                    #¢1 As this is a new field old data will not have it and error will need to be caught.
+                    try:
+                        line_dict[self.t_log_header_type[0]] = match[self.t_log_header_type[1]]
+                    except IndexError:
+                        line_dict[self.t_log_header_type[0]] = None
+                        
+                    line_dict[self.t_log_header_check1[0]] = None
+                    line_dict[self.t_log_header_date_check1[0]] = None
+                    line_dict[self.t_log_header_check2[0]] = None
+                    line_dict[self.t_log_header_germline[0]] = None
+                    line_dict[self.t_log_header_date_germline[0]] = None
+                    line_dict[self.t_log_header_ukcloud[0]] = None
+                    line_dict[self.t_log_header_date_ukcloud[0]] = None
 
                     #Set full sample name & absolute path to reports
-                    full_sample_name_t = sample_id_t + "-" + trial_id
-                    full_sample_name_b = sample_id_b + "-" + trial_id
-                    germline_pool_id = pool_id + "G"
+                    pool_id = match[self.t_log_header_pool[1]]
+                    full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=match[self.t_log_header_tumour[1]], trialID=match[self.t_log_header_trialID[1]]) 
+                    full_sample_name_b = "{sample_t}-{trialID}".format(sample_t=match[self.t_log_header_baseline[1]], trialID=match[self.t_log_header_trialID[1]])
+                    germline_pool_id = "{pool_id}G".format(pool_id=pool_id)
                     report_abs_path_somatic = os.path.join(analysis_folder_root_path, pool_id, analysis_reports_folder)
                     report_abs_path_germline = os.path.join(analysis_folder_root_path, germline_pool_id, analysis_reports_folder)
 
                     ##Attempt to set dyanmic variables related to samples checked or
                     # transferred. If values are set to NaN set the boolean value to false
+                    
+                    ## CHECK 1
+                    # ========
                     try:
-                        check1 = match[4]
+                        check1 = match[self.t_log_header_check1[1]]
                         if(check1 == "NaN"):
                             check1 = False
+                        elif(check1 == "True"):
+                            check1 = True                    
 
+                            line_dict[self.t_log_header_check1[0]] = match[self.t_log_header_check1[1]]
+                            line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]   
                     except:
                         prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 1 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                         print(prompt)
                         check1 = False
 
+                    ## CHECK 2
+                    #==========
                     try:
-                        check2 = match[6]
+                        check2 = match[self.t_log_header_check2[1]]
                         if(check2 == "NaN"):
                             check2 = False
-
+                        elif(check2 == "True"):
+                            check2 = True
+                            
+                        line_dict[self.t_log_header_check2[0]] = match[self.t_log_header_check2[1]]
+                        line_dict[self.t_log_header_date_check2[0]] = match[self.t_log_header_date_check2[1]]
                     except:
                         prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 2 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                         print(prompt)
                         check2 = False
 
+                    ## GERMLINE
+                    #===========
                     try:
-                        germline = match[7]
+                        germline = match[self.t_log_header_germline[1]]
                         if(germline == "NaN"):
                             germline = False
+                        elif(germline == "True"):
+                            germline = True
+                            
+                        line_dict[self.t_log_header_germline[0]] = match[self.t_log_header_germline[1]]
+                        line_dict[self.t_log_header_date_germline[0]] = match[self.t_log_header_date_germline[1]]
                     except:
                         prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with germline {germline}; Queued for germline check scan...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
                         print(prompt)
                         germline = False
 
+                    ## UKCloud
+                    #==========
                     try:
-                        uk_cloud = match[9]
+                        uk_cloud = match[self.t_log_header_ukcloud[1]]
                         if(uk_cloud == "NaN"):
                             uk_cloud = False
+                        elif(uk_cloud == "True"):
+                            uk_cloud = True
+                            
+                        line_dict[self.t_log_header_ukcloud[0]] = match[self.t_log_header_ukcloud[1]]
+                        line_dict[self.t_log_header_date_ukcloud[0]] = match[self.t_log_header_date_ukcloud[1]]
+                    
                     except:
                         prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with tumour {tumour} & germline {germline}; Queued for UKCloud transfer scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                         print(prompt)
                         uk_cloud = False
 
-                    ##Check if actions should be updated
+                    ## Check patient reports and eligibility to transfer data
+                    #  based on logged info in transfer log
+                    #========================================================
                     if(not check1):
                         c1_bol = False
                         regex_cmd_c1 = full_sample_name_t + ".*\.patient\.report\.\w+"
@@ -515,9 +590,13 @@ class UKCloud(object):
 
                             if(c1_bol):
                                 check1 = True
+                                line_dict[self.t_log_header_check1[0]] = "True"
+                                line_dict[self.t_log_header_date_check1[0]] = str(datetime.datetime.now().date())
                                 prompt = "{ts} - UPDATE RECORD; Somatic checker 1 complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                                 print(prompt)
                             else:
+                                line_dict[self.t_log_header_check1[0]] = "NaN"
+                                line_dict[self.t_log_header_date_check1[0]] = "NaN"
                                 prompt = "{ts} - UPDATE RECORD; Somatic checker 1 NOT complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                                 print(prompt)
 
@@ -538,9 +617,11 @@ class UKCloud(object):
 
                             if(c2_bol):
                                 check2 = True
+                                line_dict[self.t_log_header_check2[0]] = "True"
                                 prompt = "{ts} - UPDATE RECORD; Somatic checker 2 complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                                 print(prompt)
                             else:
+                                line_dict[self.t_log_header_check2[0]] = "NaN"
                                 prompt = "{ts} - UPDATE RECORD; Somatic checker 2 NOT complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                                 print(prompt)
 
@@ -565,9 +646,13 @@ class UKCloud(object):
 
                             if(c1_bol and c2_bol):
                                 germline = True
+                                line_dict[self.t_log_header_germline[0]] = "True"
+                                line_dict[self.t_log_header_date_germline[0]] = str(datetime.datetime.now().date())
                                 prompt = "{ts} - UPDATE RECORD; Germline checking complete for {pool_id} with germline {germline}...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
                                 print(prompt)
                             else:
+                                line_dict[self.t_log_header_germline[0]] = "NaN"
+                                line_dict[self.t_log_header_date_germline[0]] = "NaN"
                                 prompt = "{ts} - UPDATE RECORD; Germline checking NOT complete for {pool_id} with germline {germline}...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
                                 print(prompt)
                         except:
@@ -577,47 +662,25 @@ class UKCloud(object):
                     #If data not been sent check if eligible
                     if(not uk_cloud):
                         if( check1 and check2 and germline ):
-                            input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
-                            cmd = [uk_cloud_transfer_script] + input_data
-                            subp.call(cmd)
+                            #¢ Hashed out while testing
+                            #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
+                            #cmd = [uk_cloud_transfer_script] + input_data
+                            #subp.call(cmd)
                             uk_cloud = True
-
+                            line_dict[self.t_log_header_ukcloud[0]] = "True"
+                            line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
                             prompt = "{ts} - UPDATE RECORD; UKCloud transfer complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                             print(prompt)
                         else:
+                            line_dict[self.t_log_header_ukcloud[0]] = "NaN"
+                            line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
                             prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                             print(prompt)
-
-
-                    ##Set variables to update logfile and update the file
-                    if(check1):
-                        check1 = "True"
-                        check1_date = str(datetime.datetime.now().date())
-                        new_line = str(new_line) + "\t" + check1 + "\t" + check1_date
-                    else:
-                        new_line = str(new_line) + "\t" + "NaN" + "\t" + "NaN"
-
-                    if(check2):
-                        check2 = "True"
-                        new_line = str(new_line) + "\t" + check2
-                    else:
-                        new_line = str(new_line) + "\t" + "NaN"
-
-                    if(germline):
-                        germline = "True"
-                        germline_date = str(datetime.datetime.now().date())
-                        new_line = str(new_line) + "\t" + germline + "\t" + germline_date
-                    else:
-                        new_line = str(new_line) + "\t" + "NaN" + "\t" + "NaN"
-
-                    if(uk_cloud):
-                        uk_cloud = "True"
-                        uk_cloud_date = str(datetime.datetime.now().date())
-                        new_line = str(new_line) + "\t" + uk_cloud + "\t" + uk_cloud_date
-                    else:
-                        new_line = str(new_line) + "\t" + "NaN" + "\t" + "NaN"
-
-                    ready_OUT.write(new_line + "\n")
+                    
+                    ## Update transfer log
+                    #======================
+                    new_tsv_line = self.write_dict2line(line_dict)
+                    ready_OUT.write(new_tsv_line + "\n")
 
         #Overwrite old file with updated file
         os.rename(ready_to_transfer_file_tmp, ready_to_transfer_file)
