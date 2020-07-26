@@ -15,11 +15,16 @@ sample-sheet:
   sample_pair_name_col: gatk_grp
   sample_type:  tag
   wild_card_col: other
+  sequencing_methodology: seq_type
 
 #Panels to be checked for transfer
 panels:
   paediatric: PAED2
   exome: IDTExome
+  
+#Tags
+tags:
+    primary: Primary
 
 #Log file tracking record of changes
 log_files:
