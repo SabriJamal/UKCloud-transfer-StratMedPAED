@@ -413,7 +413,7 @@ class UKCloud(object):
                         if(sample_tag_generic.lower() == "tumour" or sample_tag_generic.lower() == "tumor"):
                             moldx_sample_t_list.append(match_moldx_generic.group(1))
                             moldx_sample_b_list.append("NaN")
-                            data_type_list.append(exome_dt)
+                            data_type_list.append(self.exome_dt)
 
                         elif(sample_tag_generic.lower() == "normal"):
                             moldx_sample_t_list.append("NaN")
@@ -697,6 +697,7 @@ class UKCloud(object):
         ##Instantiate static variables
         ready_to_transfer_file = UKCloud.config['log_files']['transfer_log']
         output_path = UKCloud.config['file_system_objects']['logfile_dest_path']
+        legacy_field = "FieldNotExistPrior2Update" #Captures that some data did not have column prior to update
         header = True
 
         ##Set full paths for logfiles
@@ -739,7 +740,7 @@ class UKCloud(object):
                     try:
                         line_dict[self.t_log_header_type[0]] = match[self.t_log_header_type[1]]
                     except IndexError:
-                        line_dict[self.t_log_header_type[0]] = None
+                        line_dict[self.t_log_header_type[0]] = "NaN"
                         
                     # Samples already transferred to UKCloud can be skipped.
                     #=======================================================
@@ -749,19 +750,21 @@ class UKCloud(object):
                             ready_OUT.write(line + "\n")
                             continue
                     except:
-                        line_dict[self.t_log_header_ukcloud[0]] = None
+                        line_dict[self.t_log_header_ukcloud[0]] = "NaN"
                         
-                    line_dict[self.t_log_header_check1[0]] = None
-                    line_dict[self.t_log_header_date_check1[0]] = None
-                    line_dict[self.t_log_header_check2[0]] = None
-                    line_dict[self.t_log_header_germline[0]] = None
-                    line_dict[self.t_log_header_date_germline[0]] = None
-                    line_dict[self.t_log_header_date_ukcloud[0]] = None
+                    line_dict[self.t_log_header_check1[0]] = "NaN"
+                    line_dict[self.t_log_header_date_check1[0]] = "NaN"
+                    line_dict[self.t_log_header_check2[0]] = "NaN"
+                    line_dict[self.t_log_header_germline[0]] = "NaN"
+                    line_dict[self.t_log_header_date_germline[0]] = "NaN"
+                    line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
        
                     ## Scan & Update samples needing checker 1,2 authorised for both somatic and germline
                     # - Panel-relapse = True
                     #===========================================================================
-                    if(match[self.t_log_header_type[1]] == self.panel_relapse_dt):
+                    if(match[self.t_log_header_type[1]] == self.panel_relapse_dt 
+                       or 
+                       match[self.t_log_header_type[1]] == legacy_field):
                         updated_line_dict = self.full_check_ck1ck2germ(line_dict, match)
                         
                     ## Scan & Update samples needing checker 1,2 authorised for both somatic and germline
