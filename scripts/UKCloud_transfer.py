@@ -767,9 +767,8 @@ class UKCloud(object):
                        match[self.t_log_header_type[1]] == legacy_field):
                         updated_line_dict = self.full_check_ck1ck2germ(line_dict, match)
                         
-                    ## Scan & Update samples needing checker 1,2 authorised for both somatic and germline
-                    # - Panel-relapse = True
-                    #===========================================================================
+                    ## Scan & Update samples checking fastqs.
+                    #========================================
                     elif(match[self.t_log_header_type[1]] == self.exome_dt):
                         updated_line_dict = self.check_fastq_ready(line_dict, match)
 
