@@ -47,7 +47,8 @@ class UKCloud(object):
     exome_dt = "Exome"
     panel_primary_dt = "Panel-Primary"
     cell_free_dt = "ctDNA"
-    low_copy_whole_genome_dt = "lcWGS"
+    low_copy_whole_genome_relapse_dt = "lcWGS-Relapse"
+    low_copy_whole_genome_primary_dt = "lcWGS-Primary"
     rna_capture_dt = "RNA-capture" #Can't be implemented until decision on BaseSpace
         
     #Transfer log header labels
@@ -242,6 +243,7 @@ class UKCloud(object):
         sample_type = [ UKCloud.config['sample-sheet']['sample_type'] ]
         ready_to_send = UKCloud.config['log_files']['transfer_log']
         output_path = UKCloud.config['file_system_objects']['logfile_dest_path']
+        primary_tag = UKCloud.config['tags']['primary']
 
         ##Instantiate dynamic variables
         pool_id_list = []
@@ -289,8 +291,10 @@ class UKCloud(object):
             #Extract pool id from sample sheet
             pool_id = pool.split(".")[0]
             
-            ## Logic to skip samples already transferred to the cloud
-            #=========================================================
+            ## Logic to skip samples already queued for transfer to the cloud
+            # i.e. sample already listed in transfer log 
+            # and has either been sent or not
+            #================================================================
             try:
                 # Controls samples to only be logged once in transfer log file
                 if(pool_id in samples_previously_queued_dict.keys()):
@@ -306,9 +310,9 @@ class UKCloud(object):
                             if( sample.find(germline) >= 0):
                                 del_germline_inds.append(ss_dict_samp_name_list.index(sample))
 
-                    ##Delete entries for tumour & germline samples succesfuly transferred
-                    if( len(set(del_tumour_inds) & set(del_germline_inds)) == 0 ):
-                        del_inds = del_tumour_inds + del_germline_inds
+                    ##Delete entries for tumour & germline samples already queued transferred
+                    if( len(del_tumour_inds) > 0 or len(del_germline_inds) >0 ):
+                        del_inds = list(set(del_tumour_inds + del_germline_inds))
                         for column_key, value_list in ss_dict.items():
                             for index in sorted(del_inds, reverse=True):
 
@@ -352,19 +356,26 @@ class UKCloud(object):
                 panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[0].lower()) ]
 
                 ##Locate indexes for all exomes
-                # NOTE! Add case specific name for exome and keep current set up in place
-                # NOTE! One example of location to add conditional to skip sample sheet with 'other' column set to qc_run (catch exception though!!)
                 exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
+                
+                ##Locate primaries ¢0
+                try:
+                    primary_ind = [i for i, wild_card_col_item in enumerate(ss_dict[wild_card_col[0]]) if(wild_card_col_item.lower() == primary_tag.lower()) ]
+                except KeyError:
+                    pass
 
+                #Select Panel primaries
+                target_ind_panel_primaries = set(target_ind) & set(panel_ind) & set(primary_ind)
+                
                 ##Select only tumour samples on PAED panel i.e. find intersect from sample
                 #sheet to avoid duplicates in ready to transfer file
-                target_ind_panel = set(target_ind) & set(panel_ind)
-                target_ind_panel = set(target_ind_panel) & set(tumour_ind)
+                target_ind_panel = set(target_ind) & set(panel_ind) & set(tumour_ind)
+                target_ind_panel = target_ind_panel - target_ind_panel_primaries
 
                 #Select exomes indexes
                 target_ind_exome = set(target_ind) & set(exome_ind)
 
-            ## Fetch samples (PANEL relapse) eligible to be queued 
+            ## Fetch samples (PANEL RELAPSE) eligible to be queued 
             #  (to be written to transfer log) for transfer check.
             #======================================================
             if(len(target_ind_panel) != 0):
@@ -421,6 +432,27 @@ class UKCloud(object):
                             data_type_list.append(self.exome_dt)
                     else:
                         prompt="{ts} - WARNING; Exome sample name {tumour} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+                        
+            ## Fetch samples (PANEL PRIMARY) eligible to be queued 
+            #  (to be written to transfer log) for transfer check.
+            #======================================================
+            if(len(target_ind_panel_primaries) != 0):
+                for ind in target_ind_panel_primaries:
+                    sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
+                    sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
+                    sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
+                    match_moldx_t = re.search("(\d+)-SMP\d+", sample_moldx_t)
+                    match_moldx_b = re.search("(\d+)-SMP\d+", sample_moldx_b)
+                    match_trial_id = re.search("\d+-(SMP\d+)",sample_trial_id)
+
+                    if(match_moldx_t and match_moldx_b and match_trial_id):
+                        pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
+                        moldx_sample_t_list.append(match_moldx_t.group(1))
+                        moldx_sample_b_list.append(match_moldx_b.group(1))
+                        trial_id_list.append(match_trial_id.group(1))
+                        data_type_list.append(self.panel_primary_dt)
+                    else:
+                        prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
 
         ## Queue eligible samples (write to transfer log) to be scanned in 
         #  transfer_UKCloud func to determine if eligible for transfer to cloud 
