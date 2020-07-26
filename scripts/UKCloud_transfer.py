@@ -1,3 +1,5 @@
+#!/bin/env python
+
 #################
 ## Description ##
 #################
@@ -432,18 +434,209 @@ class UKCloud(object):
                 for i in range(0, equal_tot_length):
                     ready_IN.write(pool_id_list[i] + "\t" + trial_id_list[i] + "\t" + moldx_sample_t_list[i] + "\t" + moldx_sample_b_list[i] + "\t" + data_type_list[i] + "\n")
 
+    ##Function to check if samples are expected to have check 1 and check 2
+    # for both somatic and germline analysis for transfer eligibility.
+    # Returns updated line as dictionary.
+    def full_check_ck1ck2germ(self, line_dict, match):
+        
+        ##Instantiate static variables
+        analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
+        analysis_reports_folder = UKCloud.config['file_system_objects']['analysis_reports_folder']
+        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script']
+        germline_pool_suffix = "G"
+        
+        #Set full sample name & absolute path to reports
+        pool_id = match[self.t_log_header_pool[1]]
+        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=match[self.t_log_header_tumour[1]], trialID=match[self.t_log_header_trialID[1]]) 
+        full_sample_name_b = "{sample_t}-{trialID}".format(sample_t=match[self.t_log_header_baseline[1]], trialID=match[self.t_log_header_trialID[1]])
+        germline_pool_id = "{pool_id}G".format(pool_id=pool_id)
+        report_abs_path_somatic = os.path.join(analysis_folder_root_path, pool_id, analysis_reports_folder)
+        report_abs_path_germline = os.path.join(analysis_folder_root_path, germline_pool_id, analysis_reports_folder)
+
+
+        ##Attempt to set dyanmic variables related to samples checked or
+        # transferred. If values are set to NaN set the boolean value to false
+        ## CHECK 1
+        # ========
+        try:
+            check1 = match[self.t_log_header_check1[1]]
+            if(check1 == "NaN"):
+                check1 = False
+            elif(check1 == "True"):
+                check1 = True                    
+
+                line_dict[self.t_log_header_check1[0]] = match[self.t_log_header_check1[1]]
+                line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]   
+        except:
+            prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 1 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+            print(prompt)
+            check1 = False
+
+        ## CHECK 2
+        #==========
+        try:
+            check2 = match[self.t_log_header_check2[1]]
+            if(check2 == "NaN"):
+                check2 = False
+            elif(check2 == "True"):
+                check2 = True
+
+            line_dict[self.t_log_header_check2[0]] = match[self.t_log_header_check2[1]]
+        except:
+            prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 2 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+            print(prompt)
+            check2 = False
+
+        ## GERMLINE
+        #===========
+        try:
+            germline = match[self.t_log_header_germline[1]]
+            if(germline == "NaN"):
+                germline = False
+            elif(germline == "True"):
+                germline = True
+
+            line_dict[self.t_log_header_germline[0]] = match[self.t_log_header_germline[1]]
+            line_dict[self.t_log_header_date_germline[0]] = match[self.t_log_header_date_germline[1]]
+        except:
+            prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with germline {germline}; Queued for germline check scan...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
+            print(prompt)
+            germline = False
+
+        ## UKCloud
+        #==========
+        try:
+            uk_cloud = match[self.t_log_header_ukcloud[1]]
+            if(uk_cloud == "NaN"):
+                uk_cloud = False
+            elif(uk_cloud == "True"):
+                uk_cloud = True
+
+            line_dict[self.t_log_header_ukcloud[0]] = match[self.t_log_header_ukcloud[1]]
+            line_dict[self.t_log_header_date_ukcloud[0]] = match[self.t_log_header_date_ukcloud[1]]
+
+        except:
+            prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with tumour {tumour} & germline {germline}; Queued for UKCloud transfer scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+            print(prompt)
+            uk_cloud = False
+
+        ## Check patient reports and eligibility to transfer data
+        #  based on logged info in transfer log
+        #========================================================
+        if(not check1):
+            c1_bol = False
+            regex_cmd_c1 = full_sample_name_t + ".*\.patient\.report\.\w+"
+            regex_cmd_pr = full_sample_name_t + ".*\.patient\.report\.tsv"
+
+            if(os.path.exists(report_abs_path_somatic)):
+                for report in os.listdir(report_abs_path_somatic):
+
+                    patient_reprt = re.search(regex_cmd_pr, report)
+                    c1 = re.search(regex_cmd_c1, report)
+
+                    #Ensure that that regex only matches checker 1 and not patient.report.tsv
+                    if(not patient_reprt and c1):
+                        c1_bol = True
+
+                if(c1_bol):
+                    check1 = True
+                    line_dict[self.t_log_header_check1[0]] = "True"
+                    line_dict[self.t_log_header_date_check1[0]] = str(datetime.datetime.now().date())
+                    prompt = "{ts} - UPDATE RECORD; Somatic checker 1 complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                    print(prompt)
+                else:
+                    line_dict[self.t_log_header_check1[0]] = "NaN"
+                    line_dict[self.t_log_header_date_check1[0]] = "NaN"
+                    prompt = "{ts} - UPDATE RECORD; Somatic checker 1 NOT complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                    print(prompt)
+
+        if(not check2):
+            c1_bol = False
+            c2_bol = False
+            regex_cmd_c1 = full_sample_name_t + ".*\.patient\.report\.\w+"
+            regex_cmd_c2 = full_sample_name_t + ".*\.patient\.report"
+
+            if(os.path.exists(report_abs_path_somatic)):
+                for report in os.listdir(report_abs_path_somatic):
+
+                    c1 = re.search(regex_cmd_c1, report)
+                    c2 = re.search(regex_cmd_c2, report)
+
+                    if(not c1 and c2):
+                        c2_bol = True
+
+                if(c2_bol):
+                    check2 = True
+                    line_dict[self.t_log_header_check2[0]] = "True"
+                    prompt = "{ts} - UPDATE RECORD; Somatic checker 2 complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                    print(prompt)
+                else:
+                    line_dict[self.t_log_header_check2[0]] = "NaN"
+                    prompt = "{ts} - UPDATE RECORD; Somatic checker 2 NOT complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                    print(prompt)
+
+        if(not germline):
+            regex_cmd_c1 = full_sample_name_b + ".*\.patient\.report\.\w+"
+            regex_cmd_c2 = full_sample_name_b + ".*\.patient\.report"
+            regex_cmd_pr = full_sample_name_b + ".*\.patient\.report\.tsv"
+            c1_bol = False
+            c2_bol = False
+
+            try:
+                for report in os.listdir(report_abs_path_germline):
+                    patient_reprt = re.search(regex_cmd_pr, report)
+                    c1 = re.search(regex_cmd_c1, report)
+                    c2 = re.search(regex_cmd_c2, report)
+
+                    if(c1 and not patient_reprt):
+                        c1_bol = True
+
+                    if(c2 and not c1):
+                        c2_bol = True
+
+                if(c1_bol and c2_bol):
+                    germline = True
+                    line_dict[self.t_log_header_germline[0]] = "True"
+                    line_dict[self.t_log_header_date_germline[0]] = str(datetime.datetime.now().date())
+                    prompt = "{ts} - UPDATE RECORD; Germline checking complete for {pool_id} with germline {germline}...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
+                    print(prompt)
+                else:
+                    line_dict[self.t_log_header_germline[0]] = "NaN"
+                    line_dict[self.t_log_header_date_germline[0]] = "NaN"
+                    prompt = "{ts} - UPDATE RECORD; Germline checking NOT complete for {pool_id} with germline {germline}...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
+                    print(prompt)
+            except:
+                prompt = "{ts} - UPDATE RECORD; Germline pool {pool_id}{suffix} with germline {germline} not created yet...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id, suffix=germline_pool_suffix)
+
+
+        #If data not been sent check if eligible
+        if(not uk_cloud):
+            if( check1 and check2 and germline ):
+                #¢ Hashed out while testing
+                #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
+                #cmd = [uk_cloud_transfer_script] + input_data
+                #subp.call(cmd)
+                uk_cloud = True
+                line_dict[self.t_log_header_ukcloud[0]] = "True"
+                line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
+                prompt = "{ts} - UPDATE RECORD; UKCloud transfer complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                print(prompt)
+            else:
+                line_dict[self.t_log_header_ukcloud[0]] = "NaN"
+                line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
+                prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                print(prompt)
+                
+        return(line_dict)
+            
     ##Picks up the ready to transfer file created by write_dict_to_file.
     # It prepares a subprocess call for each line that is scanned to be ready for
     # transferring after confirming that checker 2 has been done. It will also update
     def transfer_UKCloud(self):
         ##Instantiate static variables
-        analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
-        analysis_reports_folder = UKCloud.config['file_system_objects']['analysis_reports_folder']
-        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script']
         ready_to_transfer_file = UKCloud.config['log_files']['transfer_log']
         output_path = UKCloud.config['file_system_objects']['logfile_dest_path']
         header = True
-        germline_pool_suffix = "G"
 
         ##Set full paths for logfiles
         ready_to_transfer_file =  os.path.join(output_path, ready_to_transfer_file)
@@ -466,6 +659,7 @@ class UKCloud(object):
                     line = line.rstrip()
                     match = re.split("\t", line)
                     line_dict = {}
+                    updated_line_dict = {}
 
                     #Skip header
                     if(header):
@@ -493,193 +687,15 @@ class UKCloud(object):
                     line_dict[self.t_log_header_date_germline[0]] = None
                     line_dict[self.t_log_header_ukcloud[0]] = None
                     line_dict[self.t_log_header_date_ukcloud[0]] = None
+       
+                    ## Scan samples needing checker 1,2 authorised for both somatic and germline
+                    # - Panel-relapse = True
+                    #===========================================================================
+                    updated_line_dict = self.full_check_ck1ck2germ(line_dict, match)
 
-                    #Set full sample name & absolute path to reports
-                    pool_id = match[self.t_log_header_pool[1]]
-                    full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=match[self.t_log_header_tumour[1]], trialID=match[self.t_log_header_trialID[1]]) 
-                    full_sample_name_b = "{sample_t}-{trialID}".format(sample_t=match[self.t_log_header_baseline[1]], trialID=match[self.t_log_header_trialID[1]])
-                    germline_pool_id = "{pool_id}G".format(pool_id=pool_id)
-                    report_abs_path_somatic = os.path.join(analysis_folder_root_path, pool_id, analysis_reports_folder)
-                    report_abs_path_germline = os.path.join(analysis_folder_root_path, germline_pool_id, analysis_reports_folder)
-
-                    ##Attempt to set dyanmic variables related to samples checked or
-                    # transferred. If values are set to NaN set the boolean value to false
-                    
-                    ## CHECK 1
-                    # ========
-                    try:
-                        check1 = match[self.t_log_header_check1[1]]
-                        if(check1 == "NaN"):
-                            check1 = False
-                        elif(check1 == "True"):
-                            check1 = True                    
-
-                            line_dict[self.t_log_header_check1[0]] = match[self.t_log_header_check1[1]]
-                            line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]   
-                    except:
-                        prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 1 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                        print(prompt)
-                        check1 = False
-
-                    ## CHECK 2
-                    #==========
-                    try:
-                        check2 = match[self.t_log_header_check2[1]]
-                        if(check2 == "NaN"):
-                            check2 = False
-                        elif(check2 == "True"):
-                            check2 = True
-                            
-                        line_dict[self.t_log_header_check2[0]] = match[self.t_log_header_check2[1]]
-                        line_dict[self.t_log_header_date_check2[0]] = match[self.t_log_header_date_check2[1]]
-                    except:
-                        prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 2 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                        print(prompt)
-                        check2 = False
-
-                    ## GERMLINE
-                    #===========
-                    try:
-                        germline = match[self.t_log_header_germline[1]]
-                        if(germline == "NaN"):
-                            germline = False
-                        elif(germline == "True"):
-                            germline = True
-                            
-                        line_dict[self.t_log_header_germline[0]] = match[self.t_log_header_germline[1]]
-                        line_dict[self.t_log_header_date_germline[0]] = match[self.t_log_header_date_germline[1]]
-                    except:
-                        prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with germline {germline}; Queued for germline check scan...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
-                        print(prompt)
-                        germline = False
-
-                    ## UKCloud
-                    #==========
-                    try:
-                        uk_cloud = match[self.t_log_header_ukcloud[1]]
-                        if(uk_cloud == "NaN"):
-                            uk_cloud = False
-                        elif(uk_cloud == "True"):
-                            uk_cloud = True
-                            
-                        line_dict[self.t_log_header_ukcloud[0]] = match[self.t_log_header_ukcloud[1]]
-                        line_dict[self.t_log_header_date_ukcloud[0]] = match[self.t_log_header_date_ukcloud[1]]
-                    
-                    except:
-                        prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with tumour {tumour} & germline {germline}; Queued for UKCloud transfer scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                        print(prompt)
-                        uk_cloud = False
-
-                    ## Check patient reports and eligibility to transfer data
-                    #  based on logged info in transfer log
-                    #========================================================
-                    if(not check1):
-                        c1_bol = False
-                        regex_cmd_c1 = full_sample_name_t + ".*\.patient\.report\.\w+"
-                        regex_cmd_pr = full_sample_name_t + ".*\.patient\.report\.tsv"
-
-                        if(os.path.exists(report_abs_path_somatic)):
-                            for report in os.listdir(report_abs_path_somatic):
-
-                                patient_reprt = re.search(regex_cmd_pr, report)
-                                c1 = re.search(regex_cmd_c1, report)
-
-                                #Ensure that that regex only matches checker 1 and not patient.report.tsv
-                                if(not patient_reprt and c1):
-                                    c1_bol = True
-
-                            if(c1_bol):
-                                check1 = True
-                                line_dict[self.t_log_header_check1[0]] = "True"
-                                line_dict[self.t_log_header_date_check1[0]] = str(datetime.datetime.now().date())
-                                prompt = "{ts} - UPDATE RECORD; Somatic checker 1 complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                                print(prompt)
-                            else:
-                                line_dict[self.t_log_header_check1[0]] = "NaN"
-                                line_dict[self.t_log_header_date_check1[0]] = "NaN"
-                                prompt = "{ts} - UPDATE RECORD; Somatic checker 1 NOT complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                                print(prompt)
-
-                    if(not check2):
-                        c1_bol = False
-                        c2_bol = False
-                        regex_cmd_c1 = full_sample_name_t + ".*\.patient\.report\.\w+"
-                        regex_cmd_c2 = full_sample_name_t + ".*\.patient\.report"
-
-                        if(os.path.exists(report_abs_path_somatic)):
-                            for report in os.listdir(report_abs_path_somatic):
-
-                                c1 = re.search(regex_cmd_c1, report)
-                                c2 = re.search(regex_cmd_c2, report)
-
-                                if(not c1 and c2):
-                                    c2_bol = True
-
-                            if(c2_bol):
-                                check2 = True
-                                line_dict[self.t_log_header_check2[0]] = "True"
-                                prompt = "{ts} - UPDATE RECORD; Somatic checker 2 complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                                print(prompt)
-                            else:
-                                line_dict[self.t_log_header_check2[0]] = "NaN"
-                                prompt = "{ts} - UPDATE RECORD; Somatic checker 2 NOT complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                                print(prompt)
-
-                    if(not germline):
-                        regex_cmd_c1 = full_sample_name_b + ".*\.patient\.report\.\w+"
-                        regex_cmd_c2 = full_sample_name_b + ".*\.patient\.report"
-                        regex_cmd_pr = full_sample_name_b + ".*\.patient\.report\.tsv"
-                        c1_bol = False
-                        c2_bol = False
-
-                        try:
-                            for report in os.listdir(report_abs_path_germline):
-                                patient_reprt = re.search(regex_cmd_pr, report)
-                                c1 = re.search(regex_cmd_c1, report)
-                                c2 = re.search(regex_cmd_c2, report)
-
-                                if(c1 and not patient_reprt):
-                                    c1_bol = True
-
-                                if(c2 and not c1):
-                                    c2_bol = True
-
-                            if(c1_bol and c2_bol):
-                                germline = True
-                                line_dict[self.t_log_header_germline[0]] = "True"
-                                line_dict[self.t_log_header_date_germline[0]] = str(datetime.datetime.now().date())
-                                prompt = "{ts} - UPDATE RECORD; Germline checking complete for {pool_id} with germline {germline}...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
-                                print(prompt)
-                            else:
-                                line_dict[self.t_log_header_germline[0]] = "NaN"
-                                line_dict[self.t_log_header_date_germline[0]] = "NaN"
-                                prompt = "{ts} - UPDATE RECORD; Germline checking NOT complete for {pool_id} with germline {germline}...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id)
-                                print(prompt)
-                        except:
-                            prompt = "{ts} - UPDATE RECORD; Germline pool {pool_id}{suffix} with germline {germline} not created yet...\n".format(ts=str(datetime.datetime.now()), germline=full_sample_name_b, pool_id=pool_id, suffix=germline_pool_suffix)
-
-
-                    #If data not been sent check if eligible
-                    if(not uk_cloud):
-                        if( check1 and check2 and germline ):
-                            #¢ Hashed out while testing
-                            #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
-                            #cmd = [uk_cloud_transfer_script] + input_data
-                            #subp.call(cmd)
-                            uk_cloud = True
-                            line_dict[self.t_log_header_ukcloud[0]] = "True"
-                            line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
-                            prompt = "{ts} - UPDATE RECORD; UKCloud transfer complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                            print(prompt)
-                        else:
-                            line_dict[self.t_log_header_ukcloud[0]] = "NaN"
-                            line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
-                            prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                            print(prompt)
-                    
                     ## Update transfer log
                     #======================
-                    new_tsv_line = self.write_dict2line(line_dict)
+                    new_tsv_line = self.write_dict2line(updated_line_dict)
                     ready_OUT.write(new_tsv_line + "\n")
 
         #Overwrite old file with updated file
