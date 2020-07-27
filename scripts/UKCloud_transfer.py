@@ -784,7 +784,7 @@ class UKCloud(object):
     ##Checks that samples that don't require checking are eligible for transfer by 
     # scanning stdout calling scripts
     #============================================================================
-    def check_variant_calling_checkpoint(self, line_dict, match, data_type):
+    def check_module_calling_checkpoint(self, line_dict, match, data_type):
         #Instantiate variables
         scratch_analysis_folder_root_path = UKCloud.config['file_system_objects']['scratch_analysis_folder_root_path']
         scripts_direc = UKCloud.config['file_system_objects']['scripts_direc']
@@ -985,9 +985,9 @@ class UKCloud(object):
                     ## Scan & Update samples analysed but not checked
                     #================================================
                     elif(match[self.t_log_header_type[1]] == self.panel_primary_dt):
-                        updated_line_dict = self.check_variant_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
+                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
                     elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_relapse_dt or match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
-                        updated_line_dict = self.check_variant_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
+                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
 
                     ## Update transfer log
                     #======================
