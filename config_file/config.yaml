@@ -21,13 +21,18 @@ sample-sheet:
 panels:
   paediatric: PAED2
   exome: IDTExome
+  whole_genome: WGS
+  
+sequencing_methods: 
+ low_copy_whole_genome: lcwgs
   
 #Tags
 tags:
     primary: Primary
     stdout: out
-    script_finish_title: Tool returned
-    script_finish_tag: SUCCESS
+    variant_call_script_finish_title: Tool returned
+    variant_call_script_finish_tag: SUCCESS
+    copy_number_call_script_finish_tag: Successfully completed
 
 #Log file tracking record of changes
 log_files:
