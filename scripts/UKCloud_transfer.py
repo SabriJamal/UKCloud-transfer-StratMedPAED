@@ -236,8 +236,9 @@ class UKCloud(object):
     # containing new samples to be scanned for sending.
     def write_dict_to_file(self, glob_ss_dict):
         ##Instantiate static variables
-        allowed_panels = [ UKCloud.config['panels']['paediatric'], UKCloud.config['panels']['exome'] ]
+        allowed_panels = [ UKCloud.config['panels']['paediatric'], UKCloud.config['panels']['exome'], UKCloud.config['panels']['whole_genome'] ]
         bed_col = UKCloud.config['sample-sheet']['bedfile_col']
+        seq_type = UKCloud.config['sample-sheet']['sequencing_methodology']
         seq_pool_id = [ UKCloud.config['sample-sheet']['pool_id_col'] ]
         sample_name_col = [ UKCloud.config['sample-sheet']['sample_name_col'] ]
         sample_pair_name_col = [ UKCloud.config['sample-sheet']['sample_pair_name_col'] ]
@@ -246,6 +247,7 @@ class UKCloud(object):
         ready_to_send = UKCloud.config['log_files']['transfer_log']
         output_path = UKCloud.config['file_system_objects']['logfile_dest_path']
         primary_tag = UKCloud.config['tags']['primary']
+        seq_type_lcwgs = UKCloud.config['sequencing_methods']['low_copy_whole_genome']
 
         ##Instantiate dynamic variables
         pool_id_list = []
@@ -339,7 +341,8 @@ class UKCloud(object):
             #second level of security
             panel1 = set([allowed_panels[0]]) & set(ss_dict[bed_col]) #PAED
             panel2 = set([allowed_panels[1]]) & set(ss_dict[bed_col]) #Exome
-            comb_cond = len(panel1) + len(panel2)
+            panel3 = set([allowed_panels[2]]) & set(ss_dict[bed_col]) #WGS (low copy whole genome)
+            comb_cond = len(panel1) + len(panel2) + len(panel3)
             if(comb_cond == 0):
                 continue #skip if ss does not contain any of the targets
             else:
@@ -360,14 +363,22 @@ class UKCloud(object):
                 ##Locate indexes for all exomes
                 exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
                 
-                ##Locate primaries ¢0
+                ##Locate primaries
                 try:
                     primary_ind = [i for i, wild_card_col_item in enumerate(ss_dict[wild_card_col[0]]) if(wild_card_col_item.lower() == primary_tag.lower()) ]
                 except KeyError:
                     pass
+                
+                lcwgs_ind = [i for i, lcwgs_method in enumerate(ss_dict[seq_type]) if(lcwgs_method.lower() == seq_type_lcwgs.lower()) ]
 
                 #Select Panel primaries
                 target_ind_panel_primaries = set(target_ind) & set(panel_ind) & set(primary_ind)
+                
+                #Select lcWGS primaries
+                target_ind_lcwgs_primaries = set(target_ind) & set(primary_ind) & set(lcwgs_ind)
+                
+                #Select lcWGS relapse
+                target_ind_lcwgs_relapse = set(target_ind) & set(lcwgs_ind) - set(primary_ind)
                 
                 ##Select only tumour samples on PAED panel i.e. find intersect from sample
                 #sheet to avoid duplicates in ready to transfer file
@@ -455,6 +466,49 @@ class UKCloud(object):
                         data_type_list.append(self.panel_primary_dt)
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+      
+            ## Fetch samples (lcWGS PRIMARY) eligible to be queued 
+            #  (to be written to transfer log) for transfer check.
+            #======================================================
+            if(len(target_ind_lcwgs_primaries) != 0):
+                for ind in target_ind_lcwgs_primaries:
+                    sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
+                    sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
+                    sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
+                    match_moldx_t = re.search("(\d+)-SMP\d+", sample_moldx_t)
+                    match_moldx_b = re.search("(\d+)-SMP\d+", sample_moldx_b)
+                    match_trial_id = re.search("\d+-(SMP\d+)",sample_trial_id)
+
+                    if(match_moldx_t and match_moldx_b and match_trial_id):
+                        pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
+                        moldx_sample_t_list.append(match_moldx_t.group(1))
+                        moldx_sample_b_list.append(match_moldx_b.group(1))
+                        trial_id_list.append(match_trial_id.group(1))
+                        data_type_list.append(self.low_copy_whole_genome_primary_dt)
+                    else:
+                        prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+         
+            ## Fetch samples (lcWGS RELAPSE) eligible to be queued 
+            #  (to be written to transfer log) for transfer check.
+            #======================================================
+            if(len(target_ind_lcwgs_relapse) != 0):
+                for ind in target_ind_lcwgs_relapse:
+                    sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
+                    sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
+                    sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
+                    match_moldx_t = re.search("(\d+)-SMP\d+", sample_moldx_t)
+                    match_moldx_b = re.search("(\d+)-SMP\d+", sample_moldx_b)
+                    match_trial_id = re.search("\d+-(SMP\d+)",sample_trial_id)
+
+                    if(match_moldx_t and match_moldx_b and match_trial_id):
+                        pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
+                        moldx_sample_t_list.append(match_moldx_t.group(1))
+                        moldx_sample_b_list.append(match_moldx_b.group(1))
+                        trial_id_list.append(match_trial_id.group(1))
+                        data_type_list.append(self.low_copy_whole_genome_relapse_dt)
+                    else:
+                        prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+
 
         ## Queue eligible samples (write to transfer log) to be scanned in 
         #  transfer_UKCloud func to determine if eligible for transfer to cloud 
@@ -663,8 +717,10 @@ class UKCloud(object):
                 
         return(line_dict)
     
+    ##Checks that samples that don't require checking are eligible for transfer by 
+    # scanning fastq.ready file
+    #=======================================================================
     def check_fastq_ready(self, line_dict, match):
-        
         #Instantiate variables
         fastq_folder_root_path = UKCloud.config['file_system_objects']['fastq_analysis_folder_root_path']
         fastq_ready_file = UKCloud.config['file_system_objects']['fastq_ready_file']
@@ -724,24 +780,49 @@ class UKCloud(object):
         
         return(line_dict)
     
-    def check_variant_calling_checkpoint(self, line_dict, match):
+    
+    ##Checks that samples that don't require checking are eligible for transfer by 
+    # scanning stdout calling scripts
+    #============================================================================
+    def check_variant_calling_checkpoint(self, line_dict, match, data_type):
         #Instantiate variables
         scratch_analysis_folder_root_path = UKCloud.config['file_system_objects']['scratch_analysis_folder_root_path']
         scripts_direc = UKCloud.config['file_system_objects']['scripts_direc']
-        variant_call_script = UKCloud.config['file_system_objects']['script_variant_call']
         stdout_tag = UKCloud.config['tags']['stdout']
-        script_finish_title =  UKCloud.config['tags']['script_finish_title']
-        script_finish_tag = UKCloud.config['tags']['script_finish_tag']
         sample_id_t = match[self.t_log_header_tumour[1]]
         sample_id_b = match[self.t_log_header_baseline[1]]
         trial_id = match[self.t_log_header_trialID[1]]
         full_sample_name_t = "{sample_t}-{trialID}-T".format(sample_t=sample_id_t, trialID=trial_id) 
         full_sample_name_b = "{sample_b}-{trialID}-B".format(sample_b=sample_id_b, trialID=trial_id)
-        uk_cloud_transfer_tonly_not_checked_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_tonly_not_checked_script']
         pool_id = line_dict[self.t_log_header_pool[0]]
         complete = False
         uk_cloud = False
         
+        #Determine if tumour only or paired analysis (detection of script folder name)
+        # tumour only will have same tumour and baseline name logged in transfer log
+        if(sample_id_t == sample_id_b):
+            sample_name = full_sample_name_t
+        else:
+            sample_name = full_sample_name_b
+            
+        #Sets which script should be checked depending on data to be sent.
+        if(data_type == self.panel_primary_dt):
+            module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
+            script_finish_title =  UKCloud.config['tags']['variant_call_script_finish_title']
+            script_finish_tag = UKCloud.config['tags']['variant_call_script_finish_tag']
+            uk_cloud_transfer_tonly_not_checked_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_tonly_not_checked_script']
+        elif(data_type == self.low_copy_whole_genome_relapse_dt 
+             or 
+             data_type == self.low_copy_whole_genome_primary_dt):
+            module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
+            script_finish_tag = UKCloud.config['tags']['copy_number_call_script_finish_tag']
+            uk_cloud_transfer_tonly_not_checked_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_tonly_not_checked_script']
+
+        #Set paths to script file
+        module_call_script_full_path = os.path.join(scratch_analysis_folder_root_path, pool_id, scripts_direc, sample_name)
+        module_call_file_name = "{module_call_script}.*.{stdout_tag}".format(module_call_script=module_call_script,stdout_tag=stdout_tag)
+        module_call_script_full_path = os.path.join(module_call_script_full_path, module_call_file_name)
+
         ## UKCloud
         #==========
         try:
@@ -761,44 +842,44 @@ class UKCloud(object):
             print(prompt)
             uk_cloud = False
 
-        
-        #Determine if tumour only or paired analysis (detection of script folder name)
-        # tumour only will have same tumour and baseline name logged in transfer log
-        if(sample_id_t == sample_id_b):
-            sample_name = full_sample_name_t
-        else:
-            sample_name = full_sample_name_b
-
-        #Set paths to script file
-        variant_call_script_full_path = os.path.join(scratch_analysis_folder_root_path, pool_id, scripts_direc, sample_name)
-        variant_call_file_name = "{variant_call_script}.*.{stdout_tag}".format(variant_call_script=variant_call_script,stdout_tag=stdout_tag)
-        variant_call_script_full_path = os.path.join(variant_call_script_full_path, variant_call_file_name)
-
         #Throws index error if folder doesn't exist
         try:
-            variant_call_file = glob.glob(variant_call_script_full_path)[0]
+            module_call_file = glob.glob(module_call_script_full_path)[0]
         except IndexError:
-            variant_call_file = None
+            module_call_file = None
 
         ## Determine if data ready to send based on success code
         #  in stdout script
         #=========================================================
-        if(variant_call_file):
-            if(os.path.exists(variant_call_file)):
-                with open(variant_call_file, "r") as vc_script_IN:
-                    for line in vc_script_IN:
+        if(module_call_file):
+            if(os.path.exists(module_call_file)):
+                with open(module_call_file, "r") as module_script_IN:
+                    for line in module_script_IN:
                         line = line.strip()
 
-                        next_line_is_state = True if( re.search(script_finish_title, line) ) else False
+                        ##Verification of completion if stdout from variant call checked
+                        #=================================================================
+                        if(data_type == self.panel_primary_dt):
+                            next_line_is_state = True if( re.search(script_finish_title, line) ) else False
 
-                        #Check if variant calling completed
-                        if(next_line_is_state):
-                            analysis_complete = True if(re.search(script_finish_tag, line)) else False
-                            complete = True
-                            break
-                        else:
-                            continue
-
+                            #Check if variant calling completed
+                            if(next_line_is_state):
+                                analysis_complete = True if(re.search(script_finish_tag, line)) else False
+                                complete = True
+                                break
+                            else:
+                                continue
+                                
+                        ##Verification of completion if stdout from CNV call checked
+                        #============================================================
+                        elif(data_type == self.low_copy_whole_genome_relapse_dt 
+                             or 
+                             data_type == self.low_copy_whole_genome_primary_dt):
+                            complete = True if(re.search(script_finish_tag, line)) else False
+                            
+                            if(complete):
+                                break
+                            
                     ## Run transfer script
                     #======================
                     ##Needs to be determined if the transfer script is same as with panel transf script
@@ -890,7 +971,6 @@ class UKCloud(object):
                     line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
        
                     ## Scan & Update samples needing checker 1,2 authorised for both somatic and germline
-                    # - Panel-relapse = True
                     #===========================================================================
                     if(match[self.t_log_header_type[1]] == self.panel_relapse_dt 
                        or 
@@ -905,13 +985,15 @@ class UKCloud(object):
                     ## Scan & Update samples analysed but not checked
                     #================================================
                     elif(match[self.t_log_header_type[1]] == self.panel_primary_dt):
-                        updated_line_dict = self.check_variant_calling_checkpoint(line_dict, match)
+                        updated_line_dict = self.check_variant_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
+                    elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_relapse_dt or match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
+                        updated_line_dict = self.check_variant_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
 
                     ## Update transfer log
                     #======================
                     new_tsv_line = self.write_dict2line(updated_line_dict)
                     ready_OUT.write(new_tsv_line + "\n")
-
+                    
         #Overwrite old file with updated file
         os.rename(ready_to_transfer_file_tmp, ready_to_transfer_file)
 
