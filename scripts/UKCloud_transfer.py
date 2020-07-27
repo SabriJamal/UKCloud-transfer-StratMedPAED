@@ -35,6 +35,7 @@ import re
 import subprocess as subp
 import datetime
 import yaml
+import glob
 #import pdb;pdb.set_trace()
 
 class UKCloud(object):
@@ -80,6 +81,7 @@ class UKCloud(object):
         for index, transfer_log_header_item in enumerate(re.split("\t",self.transfer_log_header)):
             if(index == 0):
                 tsv_line = str(line_dict[transfer_log_header_item])
+   
             else:
                 tsv_line = tsv_line + "\t" + str(line_dict[transfer_log_header_item])
 
@@ -721,7 +723,103 @@ class UKCloud(object):
             print(prompt)
         
         return(line_dict)
-              
+    
+    def check_variant_calling_checkpoint(self, line_dict, match):
+        #Instantiate variables
+        scratch_analysis_folder_root_path = UKCloud.config['file_system_objects']['scratch_analysis_folder_root_path']
+        scripts_direc = UKCloud.config['file_system_objects']['scripts_direc']
+        variant_call_script = UKCloud.config['file_system_objects']['script_variant_call']
+        stdout_tag = UKCloud.config['tags']['stdout']
+        script_finish_title =  UKCloud.config['tags']['script_finish_title']
+        script_finish_tag = UKCloud.config['tags']['script_finish_tag']
+        sample_id_t = match[self.t_log_header_tumour[1]]
+        sample_id_b = match[self.t_log_header_baseline[1]]
+        trial_id = match[self.t_log_header_trialID[1]]
+        full_sample_name_t = "{sample_t}-{trialID}-T".format(sample_t=sample_id_t, trialID=trial_id) 
+        full_sample_name_b = "{sample_b}-{trialID}-B".format(sample_b=sample_id_b, trialID=trial_id)
+        uk_cloud_transfer_tonly_not_checked_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_tonly_not_checked_script']
+        pool_id = line_dict[self.t_log_header_pool[0]]
+        complete = False
+        uk_cloud = False
+        
+        ## UKCloud
+        #==========
+        try:
+            uk_cloud = match[self.t_log_header_ukcloud[1]]
+            if(uk_cloud == "NaN"):
+                uk_cloud = False
+            elif(uk_cloud == "True"):
+                uk_cloud = True
+
+            line_dict[self.t_log_header_ukcloud[0]] = match[self.t_log_header_ukcloud[1]]
+            line_dict[self.t_log_header_date_ukcloud[0]] = match[self.t_log_header_date_ukcloud[1]]
+
+        except:
+            line_dict[self.t_log_header_ukcloud[0]] = "NaN"
+            line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
+            prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with tumour {tumour} & germline {germline}; Queued for UKCloud transfer scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+            print(prompt)
+            uk_cloud = False
+
+        
+        #Determine if tumour only or paired analysis (detection of script folder name)
+        # tumour only will have same tumour and baseline name logged in transfer log
+        if(sample_id_t == sample_id_b):
+            sample_name = full_sample_name_t
+        else:
+            sample_name = full_sample_name_b
+
+        #Set paths to script file
+        variant_call_script_full_path = os.path.join(scratch_analysis_folder_root_path, pool_id, scripts_direc, sample_name)
+        variant_call_file_name = "{variant_call_script}.*.{stdout_tag}".format(variant_call_script=variant_call_script,stdout_tag=stdout_tag)
+        variant_call_script_full_path = os.path.join(variant_call_script_full_path, variant_call_file_name)
+
+        #Throws index error if folder doesn't exist
+        try:
+            variant_call_file = glob.glob(variant_call_script_full_path)[0]
+        except IndexError:
+            variant_call_file = None
+
+        ## Determine if data ready to send based on success code
+        #  in stdout script
+        #=========================================================
+        if(variant_call_file):
+            if(os.path.exists(variant_call_file)):
+                with open(variant_call_file, "r") as vc_script_IN:
+                    for line in vc_script_IN:
+                        line = line.strip()
+
+                        next_line_is_state = True if( re.search(script_finish_title, line) ) else False
+
+                        #Check if variant calling completed
+                        if(next_line_is_state):
+                            analysis_complete = True if(re.search(script_finish_tag, line)) else False
+                            complete = True
+                            break
+                        else:
+                            continue
+
+                    ## Run transfer script
+                    #======================
+                    ##Needs to be determined if the transfer script is same as with panel transf script
+                    if(complete):
+                        if(not uk_cloud):
+                            #¢X Hashed out while testing
+                            #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
+                            #cmd = [uk_cloud_transfer_tonly_not_checked_script] + input_data
+                            #subp.call(cmd)
+                            uk_cloud = True
+                            line_dict[self.t_log_header_ukcloud[0]] = "True"
+                            line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
+                            prompt = "{ts} - UPDATE RECORD; UKCloud transfer complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                            print(prompt)    
+
+                        else:
+                            prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
+                            print(prompt)
+        return(line_dict)
+
+
     ##Picks up the ready to transfer file created by write_dict_to_file.
     # It prepares a subprocess call for each line that is scanned to be ready for
     # transferring after confirming that checker 2 has been done. It will also update
@@ -803,6 +901,11 @@ class UKCloud(object):
                     #========================================
                     elif(match[self.t_log_header_type[1]] == self.exome_dt):
                         updated_line_dict = self.check_fastq_ready(line_dict, match)
+                        
+                    ## Scan & Update samples analysed but not checked
+                    #================================================
+                    elif(match[self.t_log_header_type[1]] == self.panel_primary_dt):
+                        updated_line_dict = self.check_variant_calling_checkpoint(line_dict, match)
 
                     ## Update transfer log
                     #======================
