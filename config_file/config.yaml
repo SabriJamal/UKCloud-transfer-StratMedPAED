@@ -22,9 +22,11 @@ panels:
   paediatric: PAED2
   exome: IDTExome
   whole_genome: WGS
+  circulating_tumour_DNA_paed: ct_PAED_Diagnostic
   
 sequencing_methods: 
  low_copy_whole_genome: lcwgs
+ ctDNA: cfdna
   
 #Tags
 tags:
