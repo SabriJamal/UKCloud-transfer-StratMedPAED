@@ -994,7 +994,7 @@ class UKCloud(object):
         elif(data_type == self.low_copy_whole_genome_relapse_dt
              or
              data_type == self.low_copy_whole_genome_primary_dt):
-            module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
+            module_call_script = UKCloud.config['file_system_objects']['script_copy_nunber_call']
             script_finish_tag = UKCloud.config['tags']['copy_number_call_script_finish_tag']
 
         #Set paths to script file
