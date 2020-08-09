@@ -755,7 +755,6 @@ class UKCloud(object):
         ##Instantiate static variables
         analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
         analysis_reports_folder = UKCloud.config['file_system_objects']['analysis_reports_folder']
-        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script']
 
         #Set full sample name & absolute path to reports
         pool_id = match[self.t_log_header_pool[1]]
@@ -1180,8 +1179,11 @@ class UKCloud(object):
 
                     ## Update transfer log
                     #======================
-                    new_tsv_line = self.write_dict2line(updated_line_dict)
-                    ready_OUT.write(new_tsv_line + "\n")
+                    if(len(updated_line_dict) != 0):
+                        new_tsv_line = self.write_dict2line(updated_line_dict)
+                        ready_OUT.write(new_tsv_line + "\n")
+                    else:
+                        continue
 
         #Overwrite old file with updated file
         os.rename(ready_to_transfer_file_tmp, ready_to_transfer_file)
