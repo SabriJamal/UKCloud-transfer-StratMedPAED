@@ -53,10 +53,11 @@ file_system_objects:
   uk_cloud_transfer_script_primary_lcwgs: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script_primary_lcwgs.sh
   uk_cloud_transfer_exome_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_exome_script.sh
   uk_cloud_transfer_cell_free_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_cell_free_script.sh
-  fastq_analysis_folder_root_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq 
+  fastq_analysis_folder_root_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq
   fastq_ready_file: fastq.ready
   scripts_direc: scripts
   script_variant_call: snv
+  script_copy_nunber_call: cnv
   #analysis_folder_root_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/001.reports
   #scratch_analysis_folder_root_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/3.analysis
   #sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets/Test_SS_UKCloud
