@@ -41,7 +41,7 @@ mkdir $destination_path
 
 #Fastqs
 mkdir -p $destination_path/Fastqs
-cp $data_fastq_path/$pool/$full_sample_name*fastq.gz $destination_path/Fastqs/.
+cp $data_fastq_path/$pool/*$trial_id* $destination_path/Fastqs/.
 
 #Alignments
 mkdir $destination_path/Alignments
