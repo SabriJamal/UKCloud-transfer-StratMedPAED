@@ -1,10 +1,10 @@
 #!/bin/bash
 
-##Description - This script is invokved by UKCloud_transfer.py to collect 
+##Description - This script is invokved by UKCloud_transfer.py to collect
 #								and transfer sample data to UKCloud.
 
-#By: Sabri Jamal                                                                   
-#Date: 20191121                                                                    
+#By: Sabri Jamal
+#Date: 20191121
 #Version: 1.0
 
 ###########
@@ -20,7 +20,8 @@ sample_b=$4 #moldx
 ######################
 data_report_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
 data_analysis_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
-data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
+#data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
+data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 destination_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
@@ -60,7 +61,7 @@ cp $data_report_path/$pool_germ/Reports/$sample_b-$trial_id-B.patient.report $de
 cp $data_report_path/$pool/SVs/$sample_b-$trial_id-B/$sample_t-$trial_id-T.SV.report $destination_path/Reports/Somatic/.
 cp $data_report_path/$pool/CNVs/$sample_t-$trial_id-T/$sample_t-$trial_id-T.cnv.report $destination_path/Reports/Somatic/.
 
-#SVs 
+#SVs
 mkdir -p $destination_path/SVs/Manta
 cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta/.
 
