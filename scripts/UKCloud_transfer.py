@@ -912,8 +912,8 @@ class UKCloud(object):
             sample_id = sample_id_t
 
         trial_id = match[self.t_log_header_trialID[1]]
-        #full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id)
-        #full_sample_name_b = "{sample_b}-{trialID}".format(sample_b=sample_id_b, trialID=trial_id)
+        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id)
+        full_sample_name_b = "{sample_b}-{trialID}".format(sample_b=sample_id_b, trialID=trial_id)
         pool_id = line_dict[self.t_log_header_pool[0]]
 
         ## UKCloud
@@ -1217,7 +1217,7 @@ def main(argv):
         uk_cloud_obj = UKCloud(config_file)
         glob_sample_sheet_dict = uk_cloud_obj.parse_sample_sheets()
         uk_cloud_obj.write_dict_to_file(glob_sample_sheet_dict)
-        #uk_cloud_obj.transfer_UKCloud()
+        uk_cloud_obj.transfer_UKCloud()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
