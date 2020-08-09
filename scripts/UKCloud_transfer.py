@@ -42,7 +42,7 @@ class UKCloud(object):
     ##Class attribute
     config = None
     transfer_log_header = "Pool\tTrial_ID\tTumour\tBaseline\tType\tCheck1\tDate_Check1\tCheck2\tGermline\tDate_Germline\tUKCloud\tDate_UKCloud\n"
-    
+
     ##Available data types for transfer
     panel_relapse_dt = "Panel-Relapse"
     exome_dt = "Exome"
@@ -51,7 +51,7 @@ class UKCloud(object):
     low_copy_whole_genome_relapse_dt = "lcWGS-Relapse"
     low_copy_whole_genome_primary_dt = "lcWGS-Primary"
     rna_capture_dt = "RNA-capture" #Can't be implemented until decision on BaseSpace
-        
+
     #Transfer log header labels
     t_log_header_pool = [transfer_log_header.split("\t")[0], 0]
     t_log_header_trialID = [transfer_log_header.split("\t")[1], 1]
@@ -65,7 +65,7 @@ class UKCloud(object):
     t_log_header_date_germline = [transfer_log_header.split("\t")[9], 9]
     t_log_header_ukcloud = [transfer_log_header.split("\t")[10], 10]
     t_log_header_date_ukcloud = [transfer_log_header.split("\t")[11], 11]
-    
+
     def __init__(self, config_file):
         #Instanciation vars
         self.config_file = config_file
@@ -75,18 +75,18 @@ class UKCloud(object):
     def load_config(self, config_file):
         with open(config_file, "r") as IN_config:
             UKCloud.config = yaml.load(IN_config)
-            
+
     def write_dict2line(self, line_dict):
         tsv_line = ""
         for index, transfer_log_header_item in enumerate(re.split("\t",self.transfer_log_header)):
             if(index == 0):
                 tsv_line = str(line_dict[transfer_log_header_item])
-   
+
             else:
                 tsv_line = tsv_line + "\t" + str(line_dict[transfer_log_header_item])
 
         return(tsv_line)
-             
+
     #Function load succesfully transferred samples into dict. Dict is used
     #to determine which samples to skip within func write_dict_to_file
     def load_file_as_3lvl_nested_dict(self, succesful_transfers_file):
@@ -97,12 +97,12 @@ class UKCloud(object):
         try:
             with open(succesful_transfers_file, "r") as succ_transf_pool_IN:
                 for line in succ_transf_pool_IN:
-                    
+
                     #Skip header
                     if(header):
                         header = False
                         continue
-                    
+
                     sample_pair_dict = {} #reset
                     line = line.rstrip()
                     match = re.split("\t", line)
@@ -111,7 +111,7 @@ class UKCloud(object):
                     tumour = match[2]
                     germline = match[3]
                     sample_pair_dict = {"tumour": tumour, "germline": germline} #germline = NaN if tumour only
-                    
+
                     key = "{pool}:{tumour}:{germline}".format(pool=pool_id, tumour=tumour, germline=germline)
 
                     if(pool_id not in samples_previously_queued_dict):
@@ -256,7 +256,7 @@ class UKCloud(object):
         moldx_sample_b_list = []
         trial_id_list = []
         data_type_list = []
-        
+
         ##Set full paths for log files
         ready_log_abs_path = os.path.join(output_path, ready_to_send)
 
@@ -268,7 +268,7 @@ class UKCloud(object):
             print(prompt)
 
         ##Create output file with header if doesn't exist
-        if(not os.path.exists(ready_log_abs_path)):            
+        if(not os.path.exists(ready_log_abs_path)):
             with open( os.path.join(ready_log_abs_path), "w") as ready_IN:
                 ready_IN.write(self.transfer_log_header)
 
@@ -295,10 +295,10 @@ class UKCloud(object):
 
             #Extract pool id from sample sheet
             pool_id = pool.split(".")[0]
-            
+
 
             ## Logic to skip samples already queued for transfer to the cloud
-            # i.e. sample already listed in transfer log 
+            # i.e. sample already listed in transfer log
             # and has either been sent or not
             #================================================================
             try:
@@ -365,28 +365,28 @@ class UKCloud(object):
 
                 ##Locate indexes for all exomes
                 exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
-                
+
                 ##Locate primaries
                 try:
                     primary_ind = [i for i, wild_card_col_item in enumerate(ss_dict[wild_card_col[0]]) if(wild_card_col_item.lower() == primary_tag.lower()) ]
                 except KeyError:
                     primary_ind = []
-                
+
                 lcwgs_ind = [i for i, lcwgs_method in enumerate(ss_dict[seq_type]) if(lcwgs_method.lower() == seq_type_lcwgs.lower()) ]
 
                 ct_seq_type_ind = [i for i, ctdna_method in enumerate(ss_dict[seq_type]) if(ctdna_method.lower() == seq_type_ctdna.lower()) ]
-                
+
                 ct_paed_panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[3].lower()) ]
-                
+
                 #Select Panel primaries
                 target_ind_panel_primaries = set(target_ind) & set(panel_ind) & set(primary_ind)
-                
+
                 #Select lcWGS primaries
                 target_ind_lcwgs_primaries = set(target_ind) & set(primary_ind) & set(lcwgs_ind)
-                
+
                 #Select lcWGS relapse
                 target_ind_lcwgs_relapse = set(target_ind) & set(lcwgs_ind) - set(primary_ind)
-                
+
                 ##Select only tumour samples on PAED panel i.e. find intersect from sample
                 #sheet to avoid duplicates in ready to transfer file
                 target_ind_panel = set(target_ind) & set(panel_ind) & set(tumour_ind)
@@ -394,11 +394,11 @@ class UKCloud(object):
 
                 #Select exomes indexes
                 target_ind_exome = set(target_ind) & set(exome_ind)
-                
+
                 #Select ctPAED indexes
                 target_ind_ctpaed = set(target_ind) & set(ct_seq_type_ind) & set(ct_paed_panel_ind)
 
-            ## Fetch samples (PANEL RELAPSE) eligible to be queued 
+            ## Fetch samples (PANEL RELAPSE) eligible to be queued
             #  (to be written to transfer log) for transfer check.
             #======================================================
             if(len(target_ind_panel) != 0):
@@ -419,7 +419,7 @@ class UKCloud(object):
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
 
-            ## Fetch samples (EXOME) eligible to be queued 
+            ## Fetch samples (EXOME) eligible to be queued
             #  (to be written to transfer log) for transfer check.
             #======================================================
             if(len(target_ind_exome) != 0):
@@ -430,7 +430,7 @@ class UKCloud(object):
                         sample_check_if_qc = ss_dict.get(wild_card_col[0])[ind]
                         if(sample_check_if_qc == "qc_run"):
                             continue
-                        
+
                     except TypeError:
                         sample_check_if_qc = None #column does not exist
 
@@ -438,7 +438,7 @@ class UKCloud(object):
                     sample_tag_generic = ss_dict.get(sample_type[0])[ind]
                     match_moldx_generic = re.search("(\d+)-SMP\d+", sample_moldx_generic)
                     match_trial_id = re.search("\d+-(SMP\d+)",sample_moldx_generic)
-                    
+
                     if(match_moldx_generic and match_trial_id):
                         pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
                         trial_id_list.append(match_trial_id.group(1))
@@ -455,8 +455,8 @@ class UKCloud(object):
                             data_type_list.append(self.exome_dt)
                     else:
                         prompt="{ts} - WARNING; Exome sample name {tumour} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
-                        
-            ## Fetch samples (PANEL PRIMARY) eligible to be queued 
+
+            ## Fetch samples (PANEL PRIMARY) eligible to be queued
             #  (to be written to transfer log) for transfer check.
             #======================================================
             if(len(target_ind_panel_primaries) != 0):
@@ -476,8 +476,8 @@ class UKCloud(object):
                         data_type_list.append(self.panel_primary_dt)
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
-      
-            ## Fetch samples (lcWGS PRIMARY) eligible to be queued 
+
+            ## Fetch samples (lcWGS PRIMARY) eligible to be queued
             #  (to be written to transfer log) for transfer check.
             #======================================================
             if(len(target_ind_lcwgs_primaries) != 0):
@@ -497,8 +497,8 @@ class UKCloud(object):
                         data_type_list.append(self.low_copy_whole_genome_primary_dt)
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
-         
-            ## Fetch samples (lcWGS RELAPSE) eligible to be queued 
+
+            ## Fetch samples (lcWGS RELAPSE) eligible to be queued
             #  (to be written to transfer log) for transfer check.
             #======================================================
             if(len(target_ind_lcwgs_relapse) != 0):
@@ -518,7 +518,7 @@ class UKCloud(object):
                         data_type_list.append(self.low_copy_whole_genome_relapse_dt)
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
-                        
+
             ## Fetch samples (ctDNA) eligible to be queued  ¢0
             #  (to be written to transfer log) for transfer check.
             #======================================================
@@ -539,9 +539,9 @@ class UKCloud(object):
                         data_type_list.append(self.cell_free_dt)
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
-                        
-        ## Queue eligible samples (write to transfer log) to be scanned in 
-        #  transfer_UKCloud func to determine if eligible for transfer to cloud 
+
+        ## Queue eligible samples (write to transfer log) to be scanned in
+        #  transfer_UKCloud func to determine if eligible for transfer to cloud
         #=======================================================================
         with open( os.path.join(ready_log_abs_path), "a") as ready_IN:
             equal_tot_length = len(pool_id_list) #used as template as all should be equal sized
@@ -552,20 +552,19 @@ class UKCloud(object):
     ##Function to check if samples are expected to have check 1 and check 2
     # for both somatic and germline analysis for transfer eligibility.
     # Returns updated line as dictionary.
-    def full_check_ck1ck2germ(self, line_dict, match):
-        
+    def full_check_ck1ck2germ(self, line_dict, match, uk_cloud_transfer_script):
+
         ##Instantiate static variables
         analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
         analysis_reports_folder = UKCloud.config['file_system_objects']['analysis_reports_folder']
-        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script']
         germline_pool_suffix = "G"
-        
+
         #Set full sample name & absolute path to reports
         pool_id = match[self.t_log_header_pool[1]]
         sample_id_t = match[self.t_log_header_tumour[1]]
         sample_id_b = match[self.t_log_header_baseline[1]]
         trial_id = match[self.t_log_header_trialID[1]]
-        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id) 
+        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id)
         full_sample_name_b = "{sample_b}-{trialID}".format(sample_b=sample_id_b, trialID=trial_id)
         germline_pool_id = "{pool_id}G".format(pool_id=pool_id)
         report_abs_path_somatic = os.path.join(analysis_folder_root_path, pool_id, analysis_reports_folder)
@@ -581,10 +580,10 @@ class UKCloud(object):
             if(check1 == "NaN"):
                 check1 = False
             elif(check1 == "True"):
-                check1 = True                    
+                check1 = True
 
                 line_dict[self.t_log_header_check1[0]] = match[self.t_log_header_check1[1]]
-                line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]   
+                line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]
         except:
             prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 1 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
             print(prompt)
@@ -744,26 +743,26 @@ class UKCloud(object):
                 line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
                 prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                 print(prompt)
-                
+
         return(line_dict)
-    
+
     ##Function to check if samples are expected to have check 1 and check 2
-    # for somatic in order to determine transfer eligibility. Returns updated 
+    # for somatic in order to determine transfer eligibility. Returns updated
     # line as dictionary. Note this
     # code is redundant and should be fixed in update
-    def full_check_ck1ck2(self, line_dict, match):
-        
+    def full_check_ck1ck2(self, line_dict, match, uk_cloud_transfer_script):
+
         ##Instantiate static variables
         analysis_folder_root_path = UKCloud.config['file_system_objects']['analysis_folder_root_path']
         analysis_reports_folder = UKCloud.config['file_system_objects']['analysis_reports_folder']
         uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script']
-        
+
         #Set full sample name & absolute path to reports
         pool_id = match[self.t_log_header_pool[1]]
         sample_id_t = match[self.t_log_header_tumour[1]]
         sample_id_b = match[self.t_log_header_baseline[1]]
         trial_id = match[self.t_log_header_trialID[1]]
-        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id) 
+        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id)
         full_sample_name_b = "{sample_b}-{trialID}".format(sample_b=sample_id_b, trialID=trial_id)
         report_abs_path_somatic = os.path.join(analysis_folder_root_path, pool_id, analysis_reports_folder)
 
@@ -777,10 +776,10 @@ class UKCloud(object):
             if(check1 == "NaN"):
                 check1 = False
             elif(check1 == "True"):
-                check1 = True                    
+                check1 = True
 
                 line_dict[self.t_log_header_check1[0]] = match[self.t_log_header_check1[1]]
-                line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]   
+                line_dict[self.t_log_header_date_check1[0]] = match[self.t_log_header_date_check1[1]]
         except:
             prompt = "{ts} - NEW SAMPLES DETECTED; {pool_id} with tumour {tumour} & germline {germline}; Queued for UPDATE RECORD; Somatic checker 1 scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
             print(prompt)
@@ -891,24 +890,32 @@ class UKCloud(object):
                 line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
                 prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
                 print(prompt)
-                
+
         return(line_dict)
-    
-    ##Checks that samples that don't require checking are eligible for transfer by 
+
+    ##Checks that samples that don't require checking are eligible for transfer by
     # scanning fastq.ready file
     #=======================================================================
-    def check_fastq_ready(self, line_dict, match):
+    def check_fastq_ready(self, line_dict, match, uk_cloud_transfer_script):
         #Instantiate variables
         fastq_folder_root_path = UKCloud.config['file_system_objects']['fastq_analysis_folder_root_path']
         fastq_ready_file = UKCloud.config['file_system_objects']['fastq_ready_file']
         sample_id_t = match[self.t_log_header_tumour[1]]
         sample_id_b = match[self.t_log_header_baseline[1]]
+
+		## NOTE:  Note that exomes are not expected to be paired. Paired exomes will not
+		# be sent at all and will require that true transfers are made in
+		# the same function call.
+		if(sample_id_t == "NaN"):
+			sample_id = sample_id_b
+		elif(sample_id_b == "NaN"):
+			sample_id = sample_id_t
+
         trial_id = match[self.t_log_header_trialID[1]]
-        full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id) 
-        full_sample_name_b = "{sample_b}-{trialID}".format(sample_b=sample_id_b, trialID=trial_id)
-        uk_cloud_transfer_fastq_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_fastq_script']
+        #full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id)
+        #full_sample_name_b = "{sample_b}-{trialID}".format(sample_b=sample_id_b, trialID=trial_id)
         pool_id = line_dict[self.t_log_header_pool[0]]
-        
+
         ## UKCloud
         #==========
         try:
@@ -927,7 +934,7 @@ class UKCloud(object):
             prompt = "{ts} - NEW SAMPLES DETECTED; for {pool_id} with tumour {tumour} & germline {germline}; Queued for UKCloud transfer scan...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
             print(prompt)
             uk_cloud = False
-        
+
         #Check root folder exists
         if(not uk_cloud):
             if( os.path.exists(fastq_folder_root_path) ):
@@ -935,18 +942,16 @@ class UKCloud(object):
 
                 #Check fastq generation completed
                 if(os.path.exists(fastq_ready_file_abs_path)):
-                    
+
                     ##If data not been sent check if eligible
-                    
-                    #¢X Hashed out while testing
-                    #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
-                    #cmd = [uk_cloud_transfer_fastq_script] + input_data
-                    #subp.call(cmd)
+                    input_data = [pool_id, trial_id, sample_id]
+                    cmd = [uk_cloud_transfer_script] + input_data
+                    subp.call(cmd)
                     uk_cloud = True
                     line_dict[self.t_log_header_ukcloud[0]] = "True"
                     line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
                     prompt = "{ts} - UPDATE RECORD; UKCloud transfer complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                    print(prompt)    
+                    print(prompt)
                 else:
                     "{ts} INFO: Fastq generation for {pool} not complete, skipping untill next scheduled transfer".format(ts=str(datetime.datetime.now().date()), pool=pool_id)
             else:
@@ -954,14 +959,14 @@ class UKCloud(object):
         else:
             prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
             print(prompt)
-        
+
         return(line_dict)
-    
-    
-    ##Checks that samples that don't require checking are eligible for transfer by 
+
+
+    ##Checks that samples that don't require checking are eligible for transfer by
     # scanning stdout calling scripts
     #============================================================================
-    def check_module_calling_checkpoint(self, line_dict, match, data_type):
+    def check_module_calling_checkpoint(self, line_dict, match, data_type, uk_cloud_transfer_script):
         #Instantiate variables
         scratch_analysis_folder_root_path = UKCloud.config['file_system_objects']['scratch_analysis_folder_root_path']
         scripts_direc = UKCloud.config['file_system_objects']['scripts_direc']
@@ -969,31 +974,29 @@ class UKCloud(object):
         sample_id_t = match[self.t_log_header_tumour[1]]
         sample_id_b = match[self.t_log_header_baseline[1]]
         trial_id = match[self.t_log_header_trialID[1]]
-        full_sample_name_t = "{sample_t}-{trialID}-T".format(sample_t=sample_id_t, trialID=trial_id) 
+        full_sample_name_t = "{sample_t}-{trialID}-T".format(sample_t=sample_id_t, trialID=trial_id)
         full_sample_name_b = "{sample_b}-{trialID}-B".format(sample_b=sample_id_b, trialID=trial_id)
         pool_id = line_dict[self.t_log_header_pool[0]]
         complete = False
         uk_cloud = False
-        
+
         #Determine if tumour only or paired analysis (detection of script folder name)
         # tumour only will have same tumour and baseline name logged in transfer log
         if(sample_id_t == sample_id_b):
             sample_name = full_sample_name_t
         else:
             sample_name = full_sample_name_b
-            
+
         #Sets which script should be checked depending on data to be sent.
         if(data_type == self.panel_primary_dt):
             module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
             script_finish_title =  UKCloud.config['tags']['variant_call_script_finish_title']
             script_finish_tag = UKCloud.config['tags']['variant_call_script_finish_tag']
-            uk_cloud_transfer_tonly_not_checked_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_tonly_not_checked_script']
-        elif(data_type == self.low_copy_whole_genome_relapse_dt 
-             or 
+        elif(data_type == self.low_copy_whole_genome_relapse_dt
+             or
              data_type == self.low_copy_whole_genome_primary_dt):
             module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
             script_finish_tag = UKCloud.config['tags']['copy_number_call_script_finish_tag']
-            uk_cloud_transfer_tonly_not_checked_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_tonly_not_checked_script']
 
         #Set paths to script file
         module_call_script_full_path = os.path.join(scratch_analysis_folder_root_path, pool_id, scripts_direc, sample_name)
@@ -1046,17 +1049,17 @@ class UKCloud(object):
                                 break
                             else:
                                 continue
-                                
+
                         ##Verification of completion if stdout from CNV call checked
                         #============================================================
-                        elif(data_type == self.low_copy_whole_genome_relapse_dt 
-                             or 
+                        elif(data_type == self.low_copy_whole_genome_relapse_dt
+                             or
                              data_type == self.low_copy_whole_genome_primary_dt):
                             complete = True if(re.search(script_finish_tag, line)) else False
-                            
+
                             if(complete):
                                 break
-                            
+
                     ## Run transfer script
                     #======================
                     ##Needs to be determined if the transfer script is same as with panel transf script
@@ -1064,13 +1067,13 @@ class UKCloud(object):
                         if(not uk_cloud):
                             #¢X Hashed out while testing
                             #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
-                            #cmd = [uk_cloud_transfer_tonly_not_checked_script] + input_data
+                            #cmd = [uk_cloud_transfer_script] + input_data
                             #subp.call(cmd)
                             uk_cloud = True
                             line_dict[self.t_log_header_ukcloud[0]] = "True"
                             line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
                             prompt = "{ts} - UPDATE RECORD; UKCloud transfer complete for {pool_id} with tumour {tumour} & germline {germline} pair...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
-                            print(prompt)    
+                            print(prompt)
 
                         else:
                             prompt = "{ts} - UPDATE RECORD; UKCloud transfer blocked due to somatic and germline sample checking NOT complete, please review log file for {pool_id} with tumour {tumour} & germline {germline} pair to investigate the cause...\n".format(ts=str(datetime.datetime.now()), tumour=full_sample_name_t,germline=full_sample_name_b, pool_id=pool_id)
@@ -1123,13 +1126,13 @@ class UKCloud(object):
                     line_dict[self.t_log_header_trialID[0]] = match[self.t_log_header_trialID[1]]
                     line_dict[self.t_log_header_tumour[0]] = match[self.t_log_header_tumour[1]]
                     line_dict[self.t_log_header_baseline[0]] = match[self.t_log_header_baseline[1]]
-                    
+
                     #¢1 As this is a new field old data will not have it and error will need to be caught.
                     try:
                         line_dict[self.t_log_header_type[0]] = match[self.t_log_header_type[1]]
                     except IndexError:
                         line_dict[self.t_log_header_type[0]] = "NaN"
-                        
+
                     # Samples already transferred to UKCloud can be skipped.
                     #=======================================================
                     try:
@@ -1139,40 +1142,48 @@ class UKCloud(object):
                             continue
                     except:
                         line_dict[self.t_log_header_ukcloud[0]] = "NaN"
-                        
+
                     line_dict[self.t_log_header_check1[0]] = "NaN"
                     line_dict[self.t_log_header_date_check1[0]] = "NaN"
                     line_dict[self.t_log_header_check2[0]] = "NaN"
                     line_dict[self.t_log_header_germline[0]] = "NaN"
                     line_dict[self.t_log_header_date_germline[0]] = "NaN"
                     line_dict[self.t_log_header_date_ukcloud[0]] = "NaN"
-       
+
                     ## Scan & Update samples needing checker 1,2 authorised for both somatic and germline
                     #===========================================================================
-                    if(match[self.t_log_header_type[1]] == self.panel_relapse_dt 
-                       or 
+                    if(match[self.t_log_header_type[1]] == self.panel_relapse_dt
+                       or
                        match[self.t_log_header_type[1]] == legacy_field):
-                        updated_line_dict = self.full_check_ck1ck2germ(line_dict, match)
-                        
+					   	uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
+                        updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
+
                     ## Scan & Update samples checking fastqs.
                     #========================================
                     elif(match[self.t_log_header_type[1]] == self.exome_dt):
-                        updated_line_dict = self.check_fastq_ready(line_dict, match)
-                        
+						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_exome_script']
+                        updated_line_dict = self.check_fastq_ready(line_dict, match, uk_cloud_transfer_script)
+
                     ## Scan & Update samples analysed but not checked
                     #================================================
                     elif(match[self.t_log_header_type[1]] == self.panel_primary_dt):
-                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
-                    elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_relapse_dt or match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
-                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]])
+						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_panel']
+                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
+                    elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_relapse_dt):
+						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_lcwgs']
+                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
+					elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
+						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_lcwgs']
+                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
                     elif(match[self.t_log_header_type[1]] == self.cell_free_dt):
-                        updated_line_dict = self.full_check_ck1ck2(line_dict, match)
+						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_cell_free_script']
+                        updated_line_dict = self.full_check_ck1ck2(line_dict, match, uk_cloud_transfer_script)
 
                     ## Update transfer log
                     #======================
                     new_tsv_line = self.write_dict2line(updated_line_dict)
                     ready_OUT.write(new_tsv_line + "\n")
-                    
+
         #Overwrite old file with updated file
         os.rename(ready_to_transfer_file_tmp, ready_to_transfer_file)
 
