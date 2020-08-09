@@ -31,6 +31,18 @@ uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
 #Compounded vars
 full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
+
+if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
+then
+    echo "Fastq file exists, proceeeding with transfer"
+else
+    echo "Fastq file does not exist EXITING TRANSFER, RESOLVE"
+    echo "See file for full details of all samples missing fastq data => $destination_path/fastq_missing.transfer_terminated.txt"
+    printf "$pool\t$trial_id\t$sample_t\t$sample_b\n" >> $destination_path/fastq_missing.transfer_terminated.txt
+    echo "Exiting..."
+    exit 1
+fi
+
 destination_path="$destination_path/$full_sample_name"
 
 ##Create destination folder
