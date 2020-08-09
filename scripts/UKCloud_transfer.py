@@ -1156,7 +1156,7 @@ class UKCloud(object):
                        or
                        match[self.t_log_header_type[1]] == legacy_field):
                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
-                        updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
+                       updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
 
                     ## Scan & Update samples checking fastqs.
                     #========================================
