@@ -1065,10 +1065,9 @@ class UKCloud(object):
                     ##Needs to be determined if the transfer script is same as with panel transf script
                     if(complete):
                         if(not uk_cloud):
-                            #¢X Hashed out while testing
-                            #input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
-                            #cmd = [uk_cloud_transfer_script] + input_data
-                            #subp.call(cmd)
+                            input_data = [pool_id, trial_id, sample_id_t, sample_id_b]
+                            cmd = [uk_cloud_transfer_script] + input_data
+                            subp.call(cmd)
                             uk_cloud = True
                             line_dict[self.t_log_header_ukcloud[0]] = "True"
                             line_dict[self.t_log_header_date_ukcloud[0]] = str(datetime.datetime.now().date())
