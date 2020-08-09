@@ -903,13 +903,13 @@ class UKCloud(object):
         sample_id_t = match[self.t_log_header_tumour[1]]
         sample_id_b = match[self.t_log_header_baseline[1]]
 
-		## NOTE:  Note that exomes are not expected to be paired. Paired exomes will not
-		# be sent at all and will require that true transfers are made in
-		# the same function call.
-		if(sample_id_t == "NaN"):
-			sample_id = sample_id_b
-		elif(sample_id_b == "NaN"):
-			sample_id = sample_id_t
+        ## NOTE:  Note that exomes are not expected to be paired. Paired exomes will not
+        # be sent at all and will require that true transfers are made in
+        # the same function call.
+        if(sample_id_t == "NaN"):
+            sample_id = sample_id_b
+        elif(sample_id_b == "NaN"):
+            sample_id = sample_id_t
 
         trial_id = match[self.t_log_header_trialID[1]]
         #full_sample_name_t = "{sample_t}-{trialID}".format(sample_t=sample_id_t, trialID=trial_id)
@@ -1155,28 +1155,28 @@ class UKCloud(object):
                     if(match[self.t_log_header_type[1]] == self.panel_relapse_dt
                        or
                        match[self.t_log_header_type[1]] == legacy_field):
-					   	uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
+                       uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
                         updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
 
                     ## Scan & Update samples checking fastqs.
                     #========================================
                     elif(match[self.t_log_header_type[1]] == self.exome_dt):
-						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_exome_script']
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_exome_script']
                         updated_line_dict = self.check_fastq_ready(line_dict, match, uk_cloud_transfer_script)
 
                     ## Scan & Update samples analysed but not checked
                     #================================================
                     elif(match[self.t_log_header_type[1]] == self.panel_primary_dt):
-						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_panel']
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_panel']
                         updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
                     elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_relapse_dt):
-						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_lcwgs']
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_lcwgs']
                         updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
-					elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
-						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_lcwgs']
+                    elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_lcwgs']
                         updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
                     elif(match[self.t_log_header_type[1]] == self.cell_free_dt):
-						uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_cell_free_script']
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_cell_free_script']
                         updated_line_dict = self.full_check_ck1ck2(line_dict, match, uk_cloud_transfer_script)
 
                     ## Update transfer log
