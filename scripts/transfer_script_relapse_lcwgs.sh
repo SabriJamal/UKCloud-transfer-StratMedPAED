@@ -32,7 +32,7 @@ uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 #Compounded vars
 full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
 
-if -f ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
+if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
 then
     echo "Fastq file exists, proceeeding with transfer"
 else
