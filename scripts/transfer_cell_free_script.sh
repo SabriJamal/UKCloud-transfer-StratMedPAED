@@ -25,6 +25,7 @@ data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 destination_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
+sample_name=$sample_t
 uk_cloud_desination="s3://smpaeds/CMP/ctDNA_auto/"
 uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
