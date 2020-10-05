@@ -79,7 +79,7 @@ cp $data_report_path/$pool/Stats/*$trial_id* $destination_path/Stats/.
 #Variants (Raw VCF)
 #mkdir -p $destination_path/Variants/Germline
 mkdir -p $destination_path/Variants/Somatic
-cp $data_report_path/$pool/Variants/$sample_b-$trial_id-B/SNV.$sample_t-$trial_id-T.vcf $destination_path/Variants/Somatic/.
+cp $data_report_path/$pool/Variants/*$trial_id*/SNV.$sample_t-$trial_id-T.vcf $destination_path/Variants/Somatic/.
 #cp $data_report_path/$pool_germ/Variants/$sample_b-$trial_id-B/GATK*$trial_id-B.vcf $destination_path/Variants/Germline/.
 
 ##Send files to UKCloud
