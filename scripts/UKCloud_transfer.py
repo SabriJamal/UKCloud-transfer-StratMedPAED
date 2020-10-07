@@ -1190,7 +1190,7 @@ class UKCloud(object):
                     line_dict[self.t_log_header_tumour[0]] = match[self.t_log_header_tumour[1]]
                     line_dict[self.t_log_header_baseline[0]] = match[self.t_log_header_baseline[1]]
 
-                    #¢1 As this is a new field old data will not have it and error will need to be caught.
+                    #As this is a new field old data will not have it and error will need to be caught.
                     try:
                         line_dict[self.t_log_header_type[0]] = match[self.t_log_header_type[1]]
                     except IndexError:
@@ -1223,7 +1223,7 @@ class UKCloud(object):
 
                     elif(match[self.t_log_header_type[1]] == self.vpanel_relapse_dt):
                         uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
-                        updated_line_dict = self.full_check_ck1ck2(line_dict, match, uk_cloud_transfer_script)
+                        updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
 
                     ## Scan & Update samples checking fastqs.
                     #========================================
