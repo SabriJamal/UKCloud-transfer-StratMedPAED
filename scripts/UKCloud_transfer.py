@@ -1052,7 +1052,7 @@ class UKCloud(object):
             sample_name = full_sample_name_b
 
         #Sets which script should be checked depending on data to be sent.
-        if(data_type == self.panel_primary_dt):
+        if(data_type == self.panel_primary_dt or self.vpanel_primary_dt):
             module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
             script_finish_title =  UKCloud.config['tags']['variant_call_script_finish_title']
             script_finish_tag = UKCloud.config['tags']['variant_call_script_finish_tag']
