@@ -349,7 +349,13 @@ class UKCloud(object):
             panel2 = set([allowed_panels[1]]) & set(ss_dict[bed_col]) #Exome
             panel3 = set([allowed_panels[2]]) & set(ss_dict[bed_col]) #WGS (low copy whole genome)
             panel4 = set([allowed_panels[3]]) & set(ss_dict[bed_col]) #ctPAED (ctDNA)
-            panel5 = set([allowed_vpanels[0]]) & set(ss_dict[vpanel_col]) # PAEDs as vPanel under RMH200Solid
+
+            #Catch exception for old sample sheets with no vpanel col
+            try:
+                panel5 = set([allowed_vpanels[0]]) & set(ss_dict[vpanel_col]) # PAEDs as vPanel under RMH200Solid
+            except KeyError:
+                panel5 = set()
+
             comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4) + len(panel5)
             if(comb_cond == 0):
                 continue #skip if ss does not contain any of the targets
@@ -371,7 +377,7 @@ class UKCloud(object):
                 #Select all indexes on PAEDs as vPanel
                 try:
                     vpanel_ind = [i for i, vpanel_bed in enumerate(ss_dict[vpanel_col]) if(vpanel_bed.lower() == allowed_vpanels[0].lower()) ]
-                except:
+                except KeyError:
                     #Catch exception for old sample sheets with no vpanel col
                     vpanel_ind = []
 
