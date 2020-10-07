@@ -51,6 +51,9 @@ class UKCloud(object):
     low_copy_whole_genome_relapse_dt = "lcWGS-Relapse"
     low_copy_whole_genome_primary_dt = "lcWGS-Primary"
     rna_capture_dt = "RNA-capture" #Can't be implemented until decision on BaseSpace
+    vpanel_relapse_dt = "Vpanel-Relapse"
+    vpanel_primary_dt = "Vpanel-Primary"
+
 
     #Transfer log header labels
     t_log_header_pool = [transfer_log_header.split("\t")[0], 0]
@@ -237,6 +240,8 @@ class UKCloud(object):
     def write_dict_to_file(self, glob_ss_dict):
         ##Instantiate static variables
         allowed_panels = [ UKCloud.config['panels']['paediatric'], UKCloud.config['panels']['exome'], UKCloud.config['panels']['whole_genome'], UKCloud.config['panels']['circulating_tumour_DNA_paed'] ]
+        allowed_vpanels = [ UKCloud.config['vpanels']['paediatric'] ]
+        vpanel_col = UKCloud.config['sample-sheet']['vpanel']
         bed_col = UKCloud.config['sample-sheet']['bedfile_col']
         seq_type = UKCloud.config['sample-sheet']['sequencing_methodology']
         seq_pool_id = [ UKCloud.config['sample-sheet']['pool_id_col'] ]
@@ -294,8 +299,7 @@ class UKCloud(object):
             tumour_ind = []
 
             #Extract pool id from sample sheet
-            pool_id = pool.split(".")[0]
-
+            pool_id = ss_dict[seq_pool_id[0]][0]
 
             ## Logic to skip samples already queued for transfer to the cloud
             # i.e. sample already listed in transfer log
@@ -345,7 +349,8 @@ class UKCloud(object):
             panel2 = set([allowed_panels[1]]) & set(ss_dict[bed_col]) #Exome
             panel3 = set([allowed_panels[2]]) & set(ss_dict[bed_col]) #WGS (low copy whole genome)
             panel4 = set([allowed_panels[3]]) & set(ss_dict[bed_col]) #ctPAED (ctDNA)
-            comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4)
+            panel5 = set([allowed_vpanels[0]]) & set(ss_dict[vpanel_col]) # PAEDs as vPanel under RMH200Solid
+            comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4) + len(panel5)
             if(comb_cond == 0):
                 continue #skip if ss does not contain any of the targets
             else:
@@ -362,6 +367,13 @@ class UKCloud(object):
 
                 #Select all indexes on PAEDs panel
                 panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[0].lower()) ]
+
+                #Select all indexes on PAEDs as vPanel
+                try:
+                    vpanel_ind = [i for i, vpanel_bed in enumerate(ss_dict[vpanel_col]) if(vpanel_bed.lower() == allowed_vpanels[0].lower()) ]
+                except:
+                    #Catch exception for old sample sheets with no vpanel col
+                    vpanel_ind = []
 
                 ##Locate indexes for all exomes
                 exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
@@ -381,16 +393,23 @@ class UKCloud(object):
                 #Select Panel primaries
                 target_ind_panel_primaries = set(target_ind) & set(panel_ind) & set(primary_ind)
 
+                #Select vPanel primaries run/sequenced as PAEDs vpanel (currently done on RMH200Solid)
+                target_ind_vpanel_primaries = set(target_ind) & set(vpanel_ind) & set(primary_ind)
+
                 #Select lcWGS primaries
                 target_ind_lcwgs_primaries = set(target_ind) & set(primary_ind) & set(lcwgs_ind)
 
                 #Select lcWGS relapse
                 target_ind_lcwgs_relapse = set(target_ind) & set(lcwgs_ind) - set(primary_ind)
 
-                ##Select only tumour samples on PAED panel i.e. find intersect from sample
+                ##Select only tumour samples on PAED panel (Panel relapse) i.e. find intersect from sample
                 #sheet to avoid duplicates in ready to transfer file
                 target_ind_panel = set(target_ind) & set(panel_ind) & set(tumour_ind)
                 target_ind_panel = target_ind_panel - target_ind_panel_primaries
+
+                ##Select panel relapses run/sequenced as PAEDs vpanel (currently done on RMH200Solid)
+                target_ind_vpanel_relapse = set(target_ind) & set(vpanel_ind) & set(tumour_ind)
+                target_ind_vpanel_relapse = target_ind_vpanel_relapse - target_ind_vpanel_primaries
 
                 #Select exomes indexes
                 target_ind_exome = set(target_ind) & set(exome_ind)
@@ -537,6 +556,48 @@ class UKCloud(object):
                         moldx_sample_b_list.append(match_moldx_b.group(1))
                         trial_id_list.append(match_trial_id.group(1))
                         data_type_list.append(self.cell_free_dt)
+                    else:
+                        prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+
+            ## Fetch samples (V-PANEL RELAPSE) eligible to be queued
+            #  (to be written to transfer log) for transfer check.
+            #======================================================
+            if(len(target_ind_vpanel_relapse) != 0):
+                for ind in target_ind_vpanel_relapse:
+                    sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
+                    sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
+                    sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
+                    match_moldx_t = re.search("(\d+)-SMP\d+", sample_moldx_t)
+                    match_moldx_b = re.search("(\d+)-SMP\d+", sample_moldx_b)
+                    match_trial_id = re.search("\d+-(SMP\d+)",sample_trial_id)
+
+                    if(match_moldx_t and match_moldx_b and match_trial_id):
+                        pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
+                        moldx_sample_t_list.append(match_moldx_t.group(1))
+                        moldx_sample_b_list.append(match_moldx_b.group(1))
+                        trial_id_list.append(match_trial_id.group(1))
+                        data_type_list.append(self.vpanel_relapse_dt)
+                    else:
+                        prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
+
+            ## Fetch samples (V-PANEL PRIMARY) eligible to be queued
+            #  (to be written to transfer log) for transfer check.
+            #======================================================
+            if(len(target_ind_vpanel_primaries) != 0):
+                for ind in target_ind_vpanel_primaries:
+                    sample_moldx_t = ss_dict.get(sample_name_col[0])[ind]
+                    sample_moldx_b = ss_dict.get(sample_pair_name_col[0])[ind]
+                    sample_trial_id =  ss_dict.get(sample_name_col[0])[ind]
+                    match_moldx_t = re.search("(\d+)-SMP\d+", sample_moldx_t)
+                    match_moldx_b = re.search("(\d+)-SMP\d+", sample_moldx_b)
+                    match_trial_id = re.search("\d+-(SMP\d+)",sample_trial_id)
+
+                    if(match_moldx_t and match_moldx_b and match_trial_id):
+                        pool_id_list.append(ss_dict.get(seq_pool_id[0])[ind])
+                        moldx_sample_t_list.append(match_moldx_t.group(1))
+                        moldx_sample_b_list.append(match_moldx_b.group(1))
+                        trial_id_list.append(match_trial_id.group(1))
+                        data_type_list.append(self.vpanel_primary_dt)
                     else:
                         prompt="{ts} - WARNING; Tumour {tumour}, germline {germline} or trial id {trial_id} does not match target project name structure".format(tumour=sample_moldx_t, germline=sample_moldx_b, trial_id=sample_trial_id, ts=str(datetime.datetime.now()))
 
@@ -1154,6 +1215,10 @@ class UKCloud(object):
                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
                        updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
 
+                    elif(match[self.t_log_header_type[1]] == self.vpanel_relapse_dt):
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
+                        updated_line_dict = self.full_check_ck1ck2(line_dict, match, uk_cloud_transfer_script)
+
                     ## Scan & Update samples checking fastqs.
                     #========================================
                     elif(match[self.t_log_header_type[1]] == self.exome_dt):
@@ -1163,6 +1228,9 @@ class UKCloud(object):
                     ## Scan & Update samples analysed but not checked
                     #================================================
                     elif(match[self.t_log_header_type[1]] == self.panel_primary_dt):
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_panel']
+                        updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
+                    elif(match[self.t_log_header_type[1]] == self.vpanel_primary_dt):
                         uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_panel']
                         updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
                     elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_relapse_dt):

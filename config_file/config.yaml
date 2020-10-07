@@ -16,6 +16,7 @@ sample-sheet:
   sample_type:  tag
   wild_card_col: other
   sequencing_methodology: seq_type
+  vpanel: vpanel
 
 #Panels to be checked for transfer
 panels:
@@ -23,6 +24,10 @@ panels:
   exome: IDTExome
   whole_genome: WGS
   circulating_tumour_DNA_paed: ct_PAED_Diagnostic
+
+ #vPanels
+ vpanels:
+     paediatric: PAEDv3
 
 sequencing_methods:
  low_copy_whole_genome: lcwgs
