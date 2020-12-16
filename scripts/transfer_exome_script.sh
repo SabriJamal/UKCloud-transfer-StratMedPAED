@@ -24,7 +24,7 @@ data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 destination_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
-uk_cloud_desination="s3://smpaeds/CMP/WES_auto/"
+uk_cloud_desination="s3://smpaeds/CMP/WES_auto_tmp/"
 uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
 #Compounded vars
@@ -41,7 +41,8 @@ else
     exit 1
 fi
 
-destination_path="$destination_path/$full_sample_name"
+folder_to_send="$destination_path/$pool.$trial_id" #Specific for exome transfer due to diff format of sending
+destination_path="$destination_path/$pool.$trial_id/$full_sample_name"
 
 ##Create destination folder
 mkdir $destination_path
@@ -61,10 +62,10 @@ source activate UKcloud
 #Send sample data to UKCloud
 if [[ -d $destination_path ]];
 then
-	printf "\nTransferring $destination_path to UKCloud...\n"
-	s3cmd put $destination_path --recursive $uk_cloud_desination
-	rm -rf $destination_path
-	printf "\nTransfer succesful, deleting local copy $destination_path\n"
+	printf "\nTransferring $folder_to_send to UKCloud...\n"
+	s3cmd put $folder_to_send --recursive $uk_cloud_desination
+	rm -rf $folder_to_send
+	printf "\nTransfer succesful, deleting local copy $folder_to_send\n"
 fi
 
 #Send transfer log data to UKCloud
