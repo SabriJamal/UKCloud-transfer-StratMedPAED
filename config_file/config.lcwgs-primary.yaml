@@ -1,0 +1,74 @@
+##Description - This YAML config file is used to configure input parameters
+#               for the UKCloud transfer automated transfer script originally
+#               developed for the StratMed PAEDs project.
+
+#By: Sabri Jamal
+#Date: 20191121
+#Version: 1.0
+
+#Sample sheet columns
+sample-sheet:
+  suffix: hpc.csv
+  bedfile_col:  target_bed
+  pool_id_col: pool_id
+  sample_name_col:  samp_name
+  sample_pair_name_col: gatk_grp
+  sample_type:  tag
+  wild_card_col: other
+  sequencing_methodology: seq_type
+  vpanel: vpanel
+
+#Panels to be checked for transfer
+panels:
+  paediatric: PAED2
+  exome: IDTExome
+  whole_genome: WGS
+  circulating_tumour_DNA_paed: ct_PAED_Diagnostic
+
+#vPanels
+vpanels:
+  paediatric: PAEDv3
+
+sequencing_methods:
+ low_copy_whole_genome: lcwgs
+ ctDNA: cfdna
+
+#Tags
+tags:
+    primary: Primary
+    stdout: err
+    variant_call_script_finish_title: Tool returned
+    variant_call_script_finish_tag: SUCCESS
+    copy_number_call_script_finish_tag: SMP
+
+#Log file tracking record of changes
+log_files:
+  transfer_log:  samples_ready_to_transfer.log
+
+#All file system objects incl files & folders
+file_system_objects:
+  analysis_folder_root_path: /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports
+  scratch_analysis_folder_root_path: /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis 
+  #sample_sheet_path:  /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets
+  sample_sheet_path:  /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/8.Data/StratMedPaeds/UKCloudDataReview_09092021/lcwgs-primary/samplesheets
+  #logfile_dest_path:  /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud
+  logfile_dest_path:  /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/lcwgs-primary
+  analysis_reports_folder: Reports
+  uk_cloud_transfer_script_relapse_panel: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_relapse_panel.sh
+  uk_cloud_transfer_script_primary_panel: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_primary_panel.sh
+  uk_cloud_transfer_script_relapse_lcwgs: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_relapse_lcwgs.sh
+  uk_cloud_transfer_script_primary_lcwgs: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_primary_lcwgs.sh
+  uk_cloud_transfer_exome_script: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_exome_script.sh
+  uk_cloud_transfer_cell_free_script: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_cell_free_script.sh
+  #fastq_analysis_folder_root_path:  /data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/LegacyDavros/ngs/2.fastq/
+  fastq_analysis_folder_root_path:  /data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs
+  fastq_ready_file: fastq.ready
+  scripts_direc: scripts
+  script_variant_call: snv
+  script_copy_nunber_call: cnv
+  #analysis_folder_root_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/001.reports
+  #scratch_analysis_folder_root_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/3.analysis
+  #sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets/Test_SS_UKCloud
+  #sample_sheet_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/0.samplesheets/test_area
+  #logfile_dest_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/UKCloud
+  #fastq_analysis_folder_root_path: /Users/sjamal/Documents/Work/9.Git_scripts/UKCloud-transfer-StratMedPAED/ignore/003.Fastqs
