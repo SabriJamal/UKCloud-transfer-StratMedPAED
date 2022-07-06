@@ -88,22 +88,22 @@ cp $data_report_path/$pool/Stats/*$trial_id* $destination_path/Stats/.
 mkdir -p $destination_path/Variants/Somatic
 cp $data_report_path/$pool/Variants/*$trial_id*/SNV.$sample_t-$trial_id-T.vcf $destination_path/Variants/Somatic/.
 
-##Send files to UKCloud
-module load anaconda/3/4.4.0
-source activate UKcloud
-
-#Send sample data to UKCloud
-if [[ -d $destination_path ]];
-then
-	printf "\nTransferring $destination_path to UKCloud...\n"
-	s3cmd put $destination_path --recursive $uk_cloud_desination
-	rm -rf $destination_path
-	printf "\nTransfer succesful, deleting local copy $destination_path\n"
-fi
-
-#Send transfer log data to UKCloud
-if [[ -f $transfer_log_file ]];
-then
-	printf "\nTransferring $transfer_log_file to UKCloud\n"
-	s3cmd put $transfer_log_file $uk_cloud_log_file_desintation
-fi
+#X###Send files to UKCloud
+#X#module load anaconda/3/4.4.0
+#X#source activate UKcloud
+#X#
+#X##Send sample data to UKCloud
+#X#if [[ -d $destination_path ]];
+#X#then
+#X#	printf "\nTransferring $destination_path to UKCloud...\n"
+#X#	s3cmd put $destination_path --recursive $uk_cloud_desination
+#X#	rm -rf $destination_path
+#X#	printf "\nTransfer succesful, deleting local copy $destination_path\n"
+#X#fi
+#X#
+#X##Send transfer log data to UKCloud
+#X#if [[ -f $transfer_log_file ]];
+#X#then
+#X#	printf "\nTransferring $transfer_log_file to UKCloud\n"
+#X#	s3cmd put $transfer_log_file $uk_cloud_log_file_desintation
+#X#fi

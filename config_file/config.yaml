@@ -47,18 +47,20 @@ log_files:
 
 #All file system objects incl files & folders
 file_system_objects:
-  analysis_folder_root_path: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports
-  scratch_analysis_folder_root_path: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis
-  sample_sheet_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets
-  logfile_dest_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud
+  analysis_folder_root_path: /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports
+  scratch_analysis_folder_root_path: /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis 
+  #sample_sheet_path:  /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/0.samplesheets
+  sample_sheet_path:  /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/8.Data/StratMedPaeds/UKCloudDataReview_09092021/panel-relapse/samplesheets
+  logfile_dest_path:  /data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud
   analysis_reports_folder: Reports
-  uk_cloud_transfer_script_relapse_panel: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script_relapse_panel.sh
-  uk_cloud_transfer_script_primary_panel: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script_primary_panel.sh
-  uk_cloud_transfer_script_relapse_lcwgs: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script_relapse_lcwgs.sh
-  uk_cloud_transfer_script_primary_lcwgs: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_script_primary_lcwgs.sh
-  uk_cloud_transfer_exome_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_exome_script.sh
-  uk_cloud_transfer_cell_free_script: /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/9.scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_cell_free_script.sh
-  fastq_analysis_folder_root_path:  /scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq
+  uk_cloud_transfer_script_relapse_panel: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_relapse_panel.sh
+  uk_cloud_transfer_script_primary_panel: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_primary_panel.sh
+  uk_cloud_transfer_script_relapse_lcwgs: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_relapse_lcwgs.sh
+  uk_cloud_transfer_script_primary_lcwgs: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_script_primary_lcwgs.sh
+  uk_cloud_transfer_exome_script: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_exome_script.sh
+  uk_cloud_transfer_cell_free_script: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED.INACTIVATED/scripts/transfer_cell_free_script.sh
+  #fastq_analysis_folder_root_path:  /data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/LegacyDavros/ngs/2.fastq/
+  fastq_analysis_folder_root_path:  /data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs
   fastq_ready_file: fastq.ready
   scripts_direc: scripts
   script_variant_call: snv

@@ -458,6 +458,8 @@ class UKCloud(object):
 
                     except TypeError:
                         sample_check_if_qc = None #column does not exist
+                    except IndexError:
+                        print(ss_dict.get(wild_card_col[0]))
 
                     sample_moldx_generic = ss_dict.get(sample_name_col[0])[ind]
                     sample_tag_generic = ss_dict.get(sample_type[0])[ind]
@@ -1003,6 +1005,7 @@ class UKCloud(object):
         if(not uk_cloud):
             if( os.path.exists(fastq_folder_root_path) ):
                 fastq_ready_file_abs_path = os.path.join(fastq_folder_root_path, pool_id, fastq_ready_file)
+                print("BAJS: " + "\t" + full_sample_name_t + "\t" + str(os.path.exists(fastq_folder_root_path)) + "\t" + str(os.path.exists(fastq_ready_file_abs_path)) + "\t" + str(uk_cloud) + "\t" + fastq_ready_file_abs_path)
 
                 #Check fastq generation completed
                 if(os.path.exists(fastq_ready_file_abs_path)):
@@ -1105,7 +1108,9 @@ class UKCloud(object):
 
                         ##Verification of completion if stdout from variant call checked
                         #=================================================================
-                        if(data_type == self.panel_primary_dt):
+                        if(data_type == self.panel_primary_dt
+                           or
+                           data_type == self.vpanel_primary_dt):
                             next_line_is_state = True if( re.search(script_finish_title, line) ) else False
 
                             #Check if variant calling completed

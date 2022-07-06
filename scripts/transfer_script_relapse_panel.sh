@@ -18,11 +18,13 @@ sample_b=$4 #moldx
 ######################
 ## Static variables ##
 ######################
-data_report_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
-data_analysis_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
+data_report_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
+data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
+#data_analysis_path="/data/rds/DMP/DUDMP/TRANSGEN/transgen-mdx/LegacyDavros/ngs/3.analysis"
 #data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
-destination_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
+#destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
+destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/Panel-Relapse"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
 suffix="G"
@@ -83,18 +85,18 @@ cp $data_report_path/$pool_germ/Variants/$sample_b-$trial_id-B/GATK*$trial_id-B.
 module load anaconda/3/4.4.0
 source activate UKcloud
 
-#Send sample data to UKCloud
-if [[ -d $destination_path ]];
-then
-	printf "\nTransferring $destination_path to UKCloud...\n"
-	s3cmd put $destination_path --recursive s3://smpaeds/CMP/Panel-Seq/
-	rm -rf $destination_path
-	printf "\nTransfer succesful, deleting local copy $destination_path\n"
-fi
-
-#Send transfer log data to UKCloud
-if [[ -f $transfer_log_file ]];
-then
-	printf "\nTransferring $transfer_log_file to UKCloud\n"
-	s3cmd put $transfer_log_file s3://smpaeds/CMP/
-fi
+#X##Send sample data to UKCloud
+#X#if [[ -d $destination_path ]];
+#X#then
+#X#	printf "\nTransferring $destination_path to UKCloud...\n"
+#X#	s3cmd put $destination_path --recursive s3://smpaeds/CMP/Panel-Seq/
+#X#	rm -rf $destination_path
+#X#	printf "\nTransfer succesful, deleting local copy $destination_path\n"
+#X#fi
+#X#
+#X##Send transfer log data to UKCloud
+#X#if [[ -f $transfer_log_file ]];
+#X#then
+#X#	printf "\nTransferring $transfer_log_file to UKCloud\n"
+#X#	s3cmd put $transfer_log_file s3://smpaeds/CMP/
+#X#fi

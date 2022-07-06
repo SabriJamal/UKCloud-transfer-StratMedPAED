@@ -17,11 +17,13 @@ sample_name=$3 #moldx
 ######################
 ## Static variables ##
 ######################
-data_report_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
-data_analysis_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
+data_report_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
+#data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
+data_analysis_path="/data/rds/DMP/DUDMP/TRANSGEN/transgen-mdx/LegacyDavros/ngs/3.analysis"
 #data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
-destination_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
+#destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
+destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/Exomes"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
 uk_cloud_desination="s3://smpaeds/CMP/WES_auto_tmp/"
@@ -55,22 +57,22 @@ mkdir $destination_path
 mkdir -p $destination_path/Fastqs
 cp $data_fastq_path/$pool/$full_sample_name*fastq.gz $destination_path/Fastqs/.
 
-##Send files to UKCloud
-module load anaconda/3/4.4.0
-source activate UKcloud
-
-#Send sample data to UKCloud
-if [[ -d $destination_path ]];
-then
-	printf "\nTransferring $folder_to_send to UKCloud...\n"
-	s3cmd put $folder_to_send --recursive $uk_cloud_desination
-	rm -rf $folder_to_send
-	printf "\nTransfer succesful, deleting local copy $folder_to_send\n"
-fi
-
-#Send transfer log data to UKCloud
-if [[ -f $transfer_log_file ]];
-then
-	printf "\nTransferring $transfer_log_file to UKCloud\n"
-	s3cmd put $transfer_log_file $uk_cloud_log_file_desintation
-fi
+#X###Send files to UKCloud
+#X#module load anaconda/3/4.4.0
+#X#source activate UKcloud
+#X#
+#X##Send sample data to UKCloud
+#X#if [[ -d $destination_path ]];
+#X#then
+#X#	printf "\nTransferring $folder_to_send to UKCloud...\n"
+#X#	s3cmd put $folder_to_send --recursive $uk_cloud_desination
+#X#	rm -rf $folder_to_send
+#X#	printf "\nTransfer succesful, deleting local copy $folder_to_send\n"
+#X#fi
+#X#
+#X##Send transfer log data to UKCloud
+#X#if [[ -f $transfer_log_file ]];
+#X#then
+#X#	printf "\nTransferring $transfer_log_file to UKCloud\n"
+#X#	s3cmd put $transfer_log_file $uk_cloud_log_file_desintation
+#X#fi
