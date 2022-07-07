@@ -239,8 +239,17 @@ class UKCloud(object):
     # containing new samples to be scanned for sending.
     def write_dict_to_file(self, glob_ss_dict):
         ##Instantiate static variables
-        allowed_panels = [ UKCloud.config['panels']['paediatric'], UKCloud.config['panels']['exome'], UKCloud.config['panels']['whole_genome'], UKCloud.config['panels']['circulating_tumour_DNA_paed'] ]
-        allowed_vpanels = [ UKCloud.config['vpanels']['paediatric'] ]
+        allowed_panels = [
+        UKCloud.config['panels']['paediatric'],
+        UKCloud.config['panels']['exome'],
+        UKCloud.config['panels']['whole_genome'],
+        UKCloud.config['panels']['circulating_tumour_DNA_paed']
+        ]
+        allowed_vpanels = [
+        UKCloud.config['vpanels']['paediatric'],
+        UKCloud.config['vpanels']['paediatric3.1'],
+        UKCloud.config['vpanels']['paediatric3.2']
+        ]
         vpanel_col = UKCloud.config['sample-sheet']['vpanel']
         bed_col = UKCloud.config['sample-sheet']['bedfile_col']
         seq_type = UKCloud.config['sample-sheet']['sequencing_methodology']
@@ -352,11 +361,16 @@ class UKCloud(object):
 
             #Catch exception for old sample sheets with no vpanel col
             try:
+                #Collect all vPanels
                 panel5 = set([allowed_vpanels[0]]) & set(ss_dict[vpanel_col]) # PAEDs as vPanel under RMH200Solid
+                panel6 = set([allowed_vpanels[1]]) & set(ss_dict[vpanel_col])
+                panel7 = set([allowed_vpanels[2]]) & set(ss_dict[vpanel_col])
             except KeyError:
                 panel5 = set()
+                panel6 = set()
+                panel7 = set()
 
-            comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4) + len(panel5)
+            comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4) + len(panel5) + len(panel6) + len(panel7)
             if(comb_cond == 0):
                 continue #skip if ss does not contain any of the targets
             else:
@@ -374,12 +388,16 @@ class UKCloud(object):
                 #Select all indexes on PAEDs panel
                 panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[0].lower()) ]
 
-                #Select all indexes on PAEDs as vPanel
+                #Select all indexes that are run on eligible PAEDs vPanels. Note! vpanel_v3m1_ind = vpanel v3.1 (m = minor)
                 try:
                     vpanel_ind = [i for i, vpanel_bed in enumerate(ss_dict[vpanel_col]) if(vpanel_bed.lower() == allowed_vpanels[0].lower()) ]
+                    vpanel_v3m1_ind = [i for i, vpanel_bed in enumerate(ss_dict[vpanel_col]) if(vpanel_bed.lower() == allowed_vpanels[1].lower()) ]
+                    vpanel_v3m2_ind = [i for i, vpanel_bed in enumerate(ss_dict[vpanel_col]) if(vpanel_bed.lower() == allowed_vpanels[2].lower()) ]
                 except KeyError:
                     #Catch exception for old sample sheets with no vpanel col
                     vpanel_ind = []
+                    vpanel_v3m1_ind = []
+                    vpanel_v3m2_ind = []
 
                 ##Locate indexes for all exomes
                 exome_ind = [i for i, exome_bed in enumerate(ss_dict[bed_col]) if(exome_bed.lower() == allowed_panels[1].lower()) ]
@@ -400,7 +418,7 @@ class UKCloud(object):
                 target_ind_panel_primaries = set(target_ind) & set(panel_ind) & set(primary_ind)
 
                 #Select vPanel primaries run/sequenced as PAEDs vpanel (currently done on RMH200Solid)
-                target_ind_vpanel_primaries = set(target_ind) & set(vpanel_ind) & set(primary_ind)
+                target_ind_vpanel_primaries = set(target_ind) & set(vpanel_ind) & set(vpanel_v3m1_ind) & set(vpanel_v3m2_ind) & set(primary_ind)
 
                 #Select lcWGS primaries
                 target_ind_lcwgs_primaries = set(target_ind) & set(primary_ind) & set(lcwgs_ind)
@@ -414,7 +432,7 @@ class UKCloud(object):
                 target_ind_panel = target_ind_panel - target_ind_panel_primaries
 
                 ##Select panel relapses run/sequenced as PAEDs vpanel (currently done on RMH200Solid)
-                target_ind_vpanel_relapse = set(target_ind) & set(vpanel_ind) & set(tumour_ind)
+                target_ind_vpanel_relapse = set(target_ind) & set(vpanel_ind) & set(vpanel_v3m1_ind) & set(vpanel_v3m2_ind) & set(tumour_ind)
                 target_ind_vpanel_relapse = target_ind_vpanel_relapse - target_ind_vpanel_primaries
 
                 #Select exomes indexes
@@ -1055,7 +1073,7 @@ class UKCloud(object):
             sample_name = full_sample_name_b
 
         #Sets which script should be checked depending on data to be sent.
-        if(data_type == self.panel_primary_dt 
+        if(data_type == self.panel_primary_dt
             or
             data_type == self.vpanel_primary_dt):
             module_call_script = UKCloud.config['file_system_objects']['script_variant_call']
