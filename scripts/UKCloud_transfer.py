@@ -243,7 +243,8 @@ class UKCloud(object):
         UKCloud.config['panels']['paediatric'],
         UKCloud.config['panels']['exome'],
         UKCloud.config['panels']['whole_genome'],
-        UKCloud.config['panels']['circulating_tumour_DNA_paed']
+        UKCloud.config['panels']['circulating_tumour_DNA_paed'],
+        UKCloud.config['panels']['circulating_tumour_DNA_paed2.0']
         ]
         allowed_vpanels = [
         UKCloud.config['vpanels']['paediatric'],
@@ -358,6 +359,7 @@ class UKCloud(object):
             panel2 = set([allowed_panels[1]]) & set(ss_dict[bed_col]) #Exome
             panel3 = set([allowed_panels[2]]) & set(ss_dict[bed_col]) #WGS (low copy whole genome)
             panel4 = set([allowed_panels[3]]) & set(ss_dict[bed_col]) #ctPAED (ctDNA)
+            panel8 = set([allowed_panels[4]]) & set(ss_dict[bed_col]) #ctPAED (ctDNA v2)
 
             #Catch exception for old sample sheets with no vpanel col
             try:
@@ -370,7 +372,7 @@ class UKCloud(object):
                 panel6 = set()
                 panel7 = set()
 
-            comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4) + len(panel5) + len(panel6) + len(panel7)
+            comb_cond = len(panel1) + len(panel2) + len(panel3) + len(panel4) + len(panel5) + len(panel6) + len(panel7) + len(panel8)
             if(comb_cond == 0):
                 continue #skip if ss does not contain any of the targets
             else:
@@ -380,6 +382,7 @@ class UKCloud(object):
 
                 ##Locate indexes for target samples containing right trial ID
                 target_ind = [i for i, sample in enumerate(ss_dict[sample_name_col[0]]) if(re.search("-SMP\d+-", sample))]
+                target_ind_lenient = [i for i, sample in enumerate(ss_dict[sample_name_col[0]]) if(re.search("-SMP\d+", sample))] #Captures ctDNA's labeled <moldx>-<trial>_<INT>-T
 
                 ##Locate indexes for all tumour samples
                 # NOTE! Exomes can be sequenced with either only baseline or tumour condition can't wait for match!
@@ -413,12 +416,17 @@ class UKCloud(object):
                 ct_seq_type_ind = [i for i, ctdna_method in enumerate(ss_dict[seq_type]) if(ctdna_method.lower() == seq_type_ctdna.lower()) ]
 
                 ct_paed_panel_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[3].lower()) ]
+                ct_paed_panel_v2m0_ind = [i for i, panel_bed in enumerate(ss_dict[bed_col]) if(panel_bed.lower() == allowed_panels[4].lower()) ]
 
                 #Select Panel primaries
                 target_ind_panel_primaries = set(target_ind) & set(panel_ind) & set(primary_ind)
 
                 #Select vPanel primaries run/sequenced as PAEDs vpanel (currently done on RMH200Solid)
-                target_ind_vpanel_primaries = set(target_ind) & set(vpanel_ind) & set(vpanel_v3m1_ind) & set(vpanel_v3m2_ind) & set(primary_ind)
+                target_ind_vpanel_primaries = set(target_ind) & set(tumour_ind) & set(primary_ind) & set(vpanel_ind)
+                target_ind_vpanel3m1_primaries = set(target_ind) & set(tumour_ind) & set(primary_ind) & set(vpanel_v3m1_ind)
+                target_ind_vpanel3m2_primaries = set(target_ind) & set(tumour_ind) & set(primary_ind) & set(vpanel_v3m2_ind)
+                target_ind_vpanel_primaries = set(list(target_ind_vpanel_primaries) + list(target_ind_vpanel3m1_primaries) + list(target_ind_vpanel3m2_primaries))
+                print(target_ind_vpanel_primaries)
 
                 #Select lcWGS primaries
                 target_ind_lcwgs_primaries = set(target_ind) & set(primary_ind) & set(lcwgs_ind)
@@ -432,14 +440,19 @@ class UKCloud(object):
                 target_ind_panel = target_ind_panel - target_ind_panel_primaries
 
                 ##Select panel relapses run/sequenced as PAEDs vpanel (currently done on RMH200Solid)
-                target_ind_vpanel_relapse = set(target_ind) & set(vpanel_ind) & set(vpanel_v3m1_ind) & set(vpanel_v3m2_ind) & set(tumour_ind)
+                target_ind_vpanel_relapse = set(target_ind) & set(tumour_ind) & set(vpanel_ind)
+                target_ind_vpanel3m1_relapse = set(target_ind) & set(tumour_ind) & set(vpanel_v3m1_ind)
+                target_ind_vpanel3m2_relapse = set(target_ind) & set(tumour_ind) & set(vpanel_v3m2_ind)
+                target_ind_vpanel_relapse = set(list(target_ind_vpanel_relapse) + list(target_ind_vpanel3m1_relapse) + list(target_ind_vpanel3m2_relapse))
                 target_ind_vpanel_relapse = target_ind_vpanel_relapse - target_ind_vpanel_primaries
 
                 #Select exomes indexes
                 target_ind_exome = set(target_ind) & set(exome_ind)
 
                 #Select ctPAED indexes
-                target_ind_ctpaed = set(target_ind) & set(ct_seq_type_ind) & set(ct_paed_panel_ind)
+                target_ind_ctpaed = set(target_ind_lenient) & set(ct_seq_type_ind) & set(ct_paed_panel_ind)
+                target_ind_ctpaed2m0 = set(target_ind_lenient) & set(ct_seq_type_ind) & set(ct_paed_panel_v2m0_ind)
+                target_ind_ctpaed = set(list(target_ind_ctpaed) + list(target_ind_ctpaed2m0))
 
             ## Fetch samples (PANEL RELAPSE) eligible to be queued
             #  (to be written to transfer log) for transfer check.
