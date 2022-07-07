@@ -24,6 +24,7 @@ panels:
   exome: IDTExome
   whole_genome: WGS
   circulating_tumour_DNA_paed: ct_PAED_Diagnostic
+  circulating_tumour_DNA_paed2.0: ct_PAED_Diagnostic2
 
 #vPanels
 vpanels:
