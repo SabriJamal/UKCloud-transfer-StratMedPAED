@@ -39,9 +39,9 @@ sequencing_methods:
 tags:
     primary: Primary
     stdout: out
-    variant_call_script_finish_title: Tool returned #requires change
-    variant_call_script_finish_tag: SUCCESS #requires change
-    copy_number_call_script_finish_tag: Successfully completed #requires change
+    variant_call_script_finish_title: Tool returned
+    variant_call_script_finish_tag: SUCCESS
+    copy_number_call_script_finish_tag: Successfully completed
 
 #Log file tracking record of changes
 log_files:
@@ -64,7 +64,7 @@ file_system_objects:
   uk_cloud_transfer_cell_free_script: /data/scratch/DMP/DUDMP/TRANSGEN/sjamal/9.Git_scripts/UKCloud-transfer-StratMedPAED/scripts/transfer_cell_free_script.sh
   #fastq_analysis_folder_root_path:  /data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/LegacyDavros/ngs/2.fastq/
   fastq_analysis_folder_root_path:  /data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs
-  fastq_ready_file: fastq.ready ##requires change
+  fastq_ready_file: fastq.ready
   scripts_direc: scripts
   script_variant_call: snv
   script_copy_nunber_call: cnv
