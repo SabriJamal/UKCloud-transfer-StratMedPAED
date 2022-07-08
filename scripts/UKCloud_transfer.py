@@ -113,7 +113,8 @@ class UKCloud(object):
                     trial_id = match[1]
                     tumour = match[2]
                     germline = match[3]
-                    sample_pair_dict = {"tumour": tumour, "germline": germline} #germline = NaN if tumour only
+                    dtype = match[4]
+                    sample_pair_dict = {"tumour": tumour, "germline": germline, "data_type": dtype} #germline = NaN if tumour only
 
                     key = "{pool}:{tumour}:{germline}".format(pool=pool_id, tumour=tumour, germline=germline)
 
@@ -271,6 +272,7 @@ class UKCloud(object):
         moldx_sample_b_list = []
         trial_id_list = []
         data_type_list = []
+        samples_previously_queued_dict = {}
 
         ##Set full paths for log files
         ready_log_abs_path = os.path.join(output_path, ready_to_send)
@@ -279,7 +281,7 @@ class UKCloud(object):
         if(os.path.exists(ready_log_abs_path)):
             samples_previously_queued_dict = self.load_file_as_3lvl_nested_dict(ready_log_abs_path)
         else:
-            prompt = "{ts} - WARNING; Log file tracking succesfuly transferred samples not found, no samples will be skipped.".format(ts=str(datetime.datetime.now()))
+            prompt = "{ts} - WARNING; samples_ready_to_transfer.log not found. A new log file will be created.".format(ts=str(datetime.datetime.now()))
             print(prompt)
 
         ##Create output file with header if doesn't exist
@@ -287,7 +289,7 @@ class UKCloud(object):
             with open( os.path.join(ready_log_abs_path), "w") as ready_IN:
                 ready_IN.write(self.transfer_log_header)
 
-        ##Loop to access sample sheet dict for each pool
+        #Pool = sample sheet FSO name, ss_dict = FSO converted into dict
         for pool, ss_dict in glob_ss_dict.items():
 
             ##Skip empty sample sheets that were picked up to noto have SMPAEDs
@@ -300,6 +302,8 @@ class UKCloud(object):
                 continue
 
             ss_dict_samp_name_list = ss_dict[sample_name_col[0]].copy()
+            ss_dict_gatk_grp_name_list = ss_dict[sample_pair_name_col[0]].copy()
+            ss_dict_pool_id_name_list = ss_dict[seq_pool_id[0]].copy()
 
             #Reset variables
             del_tumour_inds = []
@@ -315,41 +319,45 @@ class UKCloud(object):
             # i.e. sample already listed in transfer log
             # and has either been sent or not
             #================================================================
-            try:
-                # Controls samples to only be logged once in transfer log file
+            
+            # Controls samples to only be logged once in transfer log file
+            for pool_id, sample, gatk_grp in zip( ss_dict_pool_id_name_list, ss_dict_samp_name_list, ss_dict_gatk_grp_name_list ):
                 if(pool_id in samples_previously_queued_dict.keys()):
                     #Compare tumour/germline id from file with dict and delete entry
-                    # if exists
+                    # if it exists
                     for key, sample_pair_dict in samples_previously_queued_dict[pool_id].items():
                         tumour = sample_pair_dict["tumour"]
                         germline = sample_pair_dict["germline"]
-                        for sample in ss_dict_samp_name_list:
-                            if( sample.find(tumour) >= 0):
+                        data_type = sample_pair_dict["data_type"]
+
+                        #Identifies if sample has already been logged for non exomes
+                        if( data_type != self.exome_dt and sample.startswith(tumour) and gatk_grp.startswith(germline) ):
+                            del_tumour_inds.append(ss_dict_samp_name_list.index(sample))
+
+                        #Identify if sample logged, specific for exome due to tag column {tumour,normal}
+                        # used to set tumour or baseline column. Due to exome germline sequenced a lone
+                        elif( data_type == self.exome_dt and tumour == "NaN" ):
+                            if( sample.startswith(germline) ):
+                                del_tumour_inds.append(ss_dict_samp_name_list.index(sample))
+                        elif( data_type == self.exome_dt and germline == "NaN" ):
+                            if( sample.startswith(tumour) ):
                                 del_tumour_inds.append(ss_dict_samp_name_list.index(sample))
 
-                            if( sample.find(germline) >= 0):
-                                del_germline_inds.append(ss_dict_samp_name_list.index(sample))
+            ##Delete entries for tumour & germline samples already queued transferred
+            if( len(del_tumour_inds) > 0 or len(del_germline_inds) >0 ):
+                del_inds = list(set(del_tumour_inds + del_germline_inds))
+                for column_key, value_list in ss_dict.items():
+                    for index in sorted(del_inds, reverse=True):
 
-                    ##Delete entries for tumour & germline samples already queued transferred
-                    if( len(del_tumour_inds) > 0 or len(del_germline_inds) >0 ):
-                        del_inds = list(set(del_tumour_inds + del_germline_inds))
-                        for column_key, value_list in ss_dict.items():
-                            for index in sorted(del_inds, reverse=True):
+                        #Empty columns are skipped in sample sheet as they are expected
+                        # to be trailing commas in csv doc
+                        if(column_key == ""):
+                            continue
 
-                                #Empty columns are skipped in sample sheet as they are expected
-                                # to be trailing commas in csv doc
-                                if(column_key == ""):
-                                    continue
-
-                                del ss_dict[column_key][index]
-                    else:
-                        prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Likely reason; stumbled upon tumour only analysis where sample_id and gatk_grp column have same value".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
-                        print(prompt)
-
-            except UnboundLocalError:
-                prompt = "{ts} - WARNING; Log file tracking succesfuly transferred samples not found, no samples will be skipped.".format(ts=str(datetime.datetime.now()))
+                        del ss_dict[column_key][index]
+            else:
+                prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Likely reason; stumbled upon tumour only analysis where sample_id and gatk_grp column have same value".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
                 print(prompt)
-
 
             ## New samples are screened for eligibility
             #============================================
@@ -426,7 +434,6 @@ class UKCloud(object):
                 target_ind_vpanel3m1_primaries = set(target_ind) & set(tumour_ind) & set(primary_ind) & set(vpanel_v3m1_ind)
                 target_ind_vpanel3m2_primaries = set(target_ind) & set(tumour_ind) & set(primary_ind) & set(vpanel_v3m2_ind)
                 target_ind_vpanel_primaries = set(list(target_ind_vpanel_primaries) + list(target_ind_vpanel3m1_primaries) + list(target_ind_vpanel3m2_primaries))
-                print(target_ind_vpanel_primaries)
 
                 #Select lcWGS primaries
                 target_ind_lcwgs_primaries = set(target_ind) & set(primary_ind) & set(lcwgs_ind)
