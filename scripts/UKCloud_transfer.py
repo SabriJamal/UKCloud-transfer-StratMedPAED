@@ -149,6 +149,11 @@ class UKCloud(object):
             #Skip if reading non target sample sheets
             if(fso.find("secondaryanalyses") >= 0 or fso.find("demultiplex") >= 0):
                 continue
+            elif( not fso.startswith("Pool") ):
+                continue
+            #Skip sample sheets modified based on Jira tickets due to commments in header
+            elif( re.search("HEL", fso) ):
+                continue
 
             fso_abs_path = os.path.join(sample_sheet_dir, fso)
             ss_dict = {} #holds one sample sheet stored in nested dict glob_ss_dict
@@ -353,7 +358,7 @@ class UKCloud(object):
                         # to be trailing commas in csv doc
                         if(column_key == ""):
                             continue
-
+                        
                         del ss_dict[column_key][index]
             else:
                 prompt = "{ts} - WARNING; Possible ambigous match was found when searching moldx ID for tumour or germline in sample sheet {ss_sheet}. Likely reason; stumbled upon tumour only analysis where sample_id and gatk_grp column have same value".format(ss_sheet=pool, ts=str(datetime.datetime.now()))
