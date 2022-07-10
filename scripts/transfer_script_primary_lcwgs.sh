@@ -26,11 +26,17 @@ data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 #destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
 destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/lcwgs-primary"
+log_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/XXX_TEST_AREA_XXX/logfile"
 transfer_log_file="samples_ready_to_transfer.log"
-transfer_log_file="$destination_path/$transfer_log_file"
+transfer_log_file="$log_path/$transfer_log_file"
 sample_name=$sample_t
-uk_cloud_desination="s3://smpaeds/CMP/lcWGS_auto/lcWGS-Primary/"
-uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
+#uk_cloud_desination="s3://smpaeds/CMP/lcWGS_auto/lcWGS-Primary/"
+#uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
+target_data_destination=":/mnt/smpencrypted/download/CMP_AutomaticTransferPipeline/lcWGS_auto/lcWGS-Primary/."
+target_log_destination=":/mnt/smpencrypted/download/CMP_AutomaticTransferPipeline/."
+transf_command="scp -r"
+server="@sutsftpalma01v.icr.ac.uk"
+user="transgen-mdx"
 
 #Compounded vars
 full_sample_name="$sample_t-$trial_id-T"
@@ -48,6 +54,9 @@ else
 fi
 
 destination_path="$destination_path/$full_sample_name"
+#Set up transf command
+send_data_cmd="$transf_command $destination_path $user$server$target_data_destination"
+send_log_cmd="$transf_command $transfer_log_file $user$server$target_log_destination"
 
 ##Create destination folder
 mkdir $destination_path
@@ -84,22 +93,24 @@ cp $data_report_path/$pool/Stats/*$trial_id* $destination_path/Stats/.
 #cp $data_report_path/$pool/Variants/$sample_b-$trial_id-B/SNV.$sample_t-$trial_id-T.vcf $destination_path/Variants/Somatic/.
 #cp $data_report_path/$pool_germ/Variants/$sample_b-$trial_id-B/GATK*$trial_id-B.vcf $destination_path/Variants/Germline/.
 
-#X###Send files to UKCloud
-#X#module load anaconda/3/4.4.0
-#X#source activate UKcloud
-#X#
-#X##Send sample data to UKCloud
-#X#if [[ -d $destination_path ]];
-#X#then
-#X#	printf "\nTransferring $destination_path to UKCloud...\n"
-#X#	s3cmd put $destination_path --recursive $uk_cloud_desination
-#X#	rm -rf $destination_path
-#X#	printf "\nTransfer succesful, deleting local copy $destination_path\n"
-#X#fi
-#X#
-#X##Send transfer log data to UKCloud
-#X#if [[ -f $transfer_log_file ]];
-#X#then
-#X#	printf "\nTransferring $transfer_log_file to UKCloud\n"
-#X#	s3cmd put $transfer_log_file $uk_cloud_log_file_desintation
-#X#fi
+##Send files to UKCloud
+#module load anaconda/3/4.4.0
+#source activate UKcloud
+
+#Send sample data to UKCloud
+if [[ -d $destination_path ]];
+then
+	printf "\nTransferring $destination_path to encrypted RDS...\n"
+	#s3cmd put $destination_path --recursive $uk_cloud_desination
+    $send_data_cmd
+	rm -rf $destination_path
+	printf "\nTransfer succesful, deleting local copy $destination_path\n"
+fi
+
+#Send transfer log data to UKCloud
+if [[ -f $transfer_log_file ]];
+then
+	printf "\nTransferring $transfer_log_file to encrypted RDS\n"
+	#s3cmd put $transfer_log_file $uk_cloud_log_file_desintation
+    $send_log_cmd
+fi

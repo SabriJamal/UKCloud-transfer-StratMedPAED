@@ -25,9 +25,15 @@ data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 #destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
 destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/Panel-Relapse"
+log_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/XXX_TEST_AREA_XXX/logfile"
 transfer_log_file="samples_ready_to_transfer.log"
-transfer_log_file="$destination_path/$transfer_log_file"
+transfer_log_file="$log_path/$transfer_log_file"
 suffix="G"
+target_data_destination=":/mnt/smpencrypted/download/CMP_AutomaticTransferPipeline/Panel-Seq/."
+target_log_destination=":/mnt/smpencrypted/download/CMP_AutomaticTransferPipeline/."
+transf_command="scp -r"
+server="@sutsftpalma01v.icr.ac.uk"
+user="transgen-mdx"
 
 #Compounded vars
 full_sample_name="$sample_t-$trial_id-T"
@@ -36,6 +42,11 @@ pool_germ="$pool$suffix"
 
 ##Create destination folder
 mkdir $destination_path
+
+#Set up transf command
+send_data_cmd="$transf_command $destination_path $user$server$target_data_destination"
+send_log_cmd="$transf_command $transfer_log_file $user$server$target_log_destination"
+
 
 ###################
 ## Data transfer ##
@@ -83,21 +94,23 @@ cp $data_report_path/$pool/Variants/$sample_b-$trial_id-B/SNV.$sample_t-$trial_i
 cp $data_report_path/$pool_germ/Variants/$sample_b-$trial_id-B/GATK*$trial_id-B.vcf $destination_path/Variants/Germline/.
 
 ##Send files to UKCloud
-module load anaconda/3/4.4.0
-source activate UKcloud
+#module load anaconda/3/4.4.0
+#source activate UKcloud
 
-#X##Send sample data to UKCloud
-#X#if [[ -d $destination_path ]];
-#X#then
-#X#	printf "\nTransferring $destination_path to UKCloud...\n"
-#X#	s3cmd put $destination_path --recursive s3://smpaeds/CMP/Panel-Seq/
-#X#	rm -rf $destination_path
-#X#	printf "\nTransfer succesful, deleting local copy $destination_path\n"
-#X#fi
-#X#
-#X##Send transfer log data to UKCloud
-#X#if [[ -f $transfer_log_file ]];
-#X#then
-#X#	printf "\nTransferring $transfer_log_file to UKCloud\n"
-#X#	s3cmd put $transfer_log_file s3://smpaeds/CMP/
-#X#fi
+#Send sample data to UKCloud
+if [[ -d $destination_path ]];
+then
+	printf "\nTransferring $destination_path to UKCloud...\n"
+	#s3cmd put $destination_path --recursive s3://smpaeds/CMP/Panel-Seq/
+    $send_data_cmd
+	rm -rf $destination_path
+	printf "\nTransfer succesful, deleting local copy $destination_path\n"
+fi
+
+#Send transfer log data to UKCloud
+if [[ -f $transfer_log_file ]];
+then
+	printf "\nTransferring $transfer_log_file to UKCloud\n"
+	#s3cmd put $transfer_log_file s3://smpaeds/CMP/
+    $send_log_cmd
+fi
