@@ -33,7 +33,8 @@ uk_cloud_desination="s3://smpaeds/CMP/lcWGS_auto/lcWGS-Relapse/"
 uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
 #Compounded vars
-full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
+full_sample_name="$sample_t-$trial_id-T"
+#full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
 
 if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
 then
@@ -65,7 +66,7 @@ cp $data_report_path/$pool/Alignments/*$trial_id* $destination_path/Alignments/.
 
 #CNVs
 mkdir -p $destination_path/CNVs
-cp -r $data_analysis_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
+cp -r $data_report_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
 
 #SVs (Remove intermediary SV files)
 #mkdir -p $destination_path/SVs/Manta

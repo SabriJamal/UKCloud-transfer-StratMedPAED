@@ -24,7 +24,7 @@ data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis
 #data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 #destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
-destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/Panel-Primary/Batch2_v3.1"
+destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/Panel-Primary"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
 sample_name=$sample_t
@@ -32,7 +32,8 @@ uk_cloud_desination="s3://smpaeds/CMP/Primary-Panel_auto/"
 uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
 #Compounded vars
-full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
+full_sample_name="$sample_t-$trial_id-T"
+#full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
 
 if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
 then
@@ -64,15 +65,16 @@ cp $data_report_path/$pool/Alignments/*$trial_id* $destination_path/Alignments/.
 
 #CNVs
 mkdir -p $destination_path/CNVs
-cp -r $data_analysis_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
+cp -r $data_report_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
 
 #SVs
-mkdir -p $destination_path/SVs/Manta
-cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta/.
+mkdir -p $destination_path/SVs/Manta_SCRATCH $destination_path/SVs/Manta_RDS
+cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta_SCRATCH/.
+cp -r $data_report_path/$pool/SVs/*$trial_id*-T/* $destination_path/SVs/Manta_RDS/.
 
 ##Remove intermediary SV files
-rm $destination_path/SVs/Manta/*[wW]orkflow*
-rm -rf $destination_path/SVs/Manta/workspace
+#rm $destination_path/SVs/Manta/*[wW]orkflow*
+#rm -rf $destination_path/SVs/Manta/workspace
 
 #Stats
 mkdir $destination_path/Stats

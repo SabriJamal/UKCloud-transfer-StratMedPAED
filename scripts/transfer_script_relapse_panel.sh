@@ -51,7 +51,7 @@ cp $data_report_path/$pool/Alignments/*$trial_id* $destination_path/Alignments/.
 
 #CNVs
 mkdir -p $destination_path/CNVs
-cp -r $data_analysis_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
+cp -r $data_report_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
 
 #Reports
 mkdir -p $destination_path/Reports/Germline
@@ -64,12 +64,13 @@ cp $data_report_path/$pool/SVs/$sample_b-$trial_id-B/$sample_t-$trial_id-T.SV.re
 cp $data_report_path/$pool/CNVs/$sample_t-$trial_id-T/$sample_t-$trial_id-T.cnv.report $destination_path/Reports/Somatic/.
 
 #SVs
-mkdir -p $destination_path/SVs/Manta
-cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta/.
+mkdir -p $destination_path/SVs/Manta_SCRATCH $destination_path/SVs/Manta_RDS
+cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta_SCRATCH/.
+cp -r $data_report_path/$pool/SVs/*$trial_id*-T/* $destination_path/SVs/Manta_RDS/.
 
 ##Remove intermediary SV files
-rm $destination_path/SVs/Manta/*[wW]orkflow*
-rm -rf $destination_path/SVs/Manta/workspace
+#rm $destination_path/SVs/Manta/*[wW]orkflow*
+#rm -rf $destination_path/SVs/Manta/workspace
 
 #Stats
 mkdir $destination_path/Stats

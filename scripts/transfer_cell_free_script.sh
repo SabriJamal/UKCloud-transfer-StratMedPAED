@@ -18,11 +18,11 @@ sample_b=$4 #moldx
 ######################
 ## Static variables ##
 ######################
-data_report_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
-data_analysis_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
+data_report_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
+data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
 #data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
-destination_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
+destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud/ctDNA"
 transfer_log_file="samples_ready_to_transfer.log"
 transfer_log_file="$destination_path/$transfer_log_file"
 sample_name=$sample_t
@@ -30,9 +30,10 @@ uk_cloud_desination="s3://smpaeds/CMP/ctDNA_auto/"
 uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
 #Compounded vars
-full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
+full_sample_name="$sample_t-$trial_id-T"
+#full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
 
-if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
+if ls $data_fastq_path/$pool/$sample_name* 1> /dev/null 2>&1;
 then
     echo "Fastq file exists, proceeeding with transfer"
 else
@@ -61,7 +62,7 @@ cp $data_report_path/$pool/Alignments/*$trial_id* $destination_path/Alignments/.
 
 #CNVs
 mkdir -p $destination_path/CNVs
-cp -r $data_analysis_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
+cp -r $data_report_path/$pool/CNVs/*$trial_id*/* $destination_path/CNVs/.
 
 #Reports
 #mkdir -p $destination_path/Reports/Germline
@@ -72,8 +73,9 @@ cp $data_report_path/$pool/SVs/*$trial_id*/$sample_t-$trial_id-T.SV.report $dest
 cp $data_report_path/$pool/CNVs/$sample_t-$trial_id-T/$sample_t-$trial_id-T.cnv.report $destination_path/Reports/Somatic/.
 
 #SVs
-mkdir -p $destination_path/SVs/Manta
-cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta/.
+mkdir -p $destination_path/SVs/Manta_SCRATCH $destination_path/SVs/Manta_RDS
+cp -r $data_analysis_path/$pool/SVs/AnnotSV/*$trial_id*-T/* $destination_path/SVs/Manta_SCRATCH/.
+cp -r $data_report_path/$pool/SVs/*$trial_id*-T/* $destination_path/SVs/Manta_RDS/.
 
 ##Remove intermediary SV files
 rm $destination_path/SVs/Manta/*[wW]orkflow*

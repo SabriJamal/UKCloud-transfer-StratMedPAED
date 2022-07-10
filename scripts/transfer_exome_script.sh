@@ -19,7 +19,7 @@ sample_name=$3 #moldx
 ######################
 data_report_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/001.reports"
 #data_analysis_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/3.analysis"
-data_analysis_path="/data/rds/DMP/DUDMP/TRANSGEN/transgen-mdx/LegacyDavros/ngs/3.analysis"
+#data_analysis_path="/data/rds/DMP/DUDMP/TRANSGEN/transgen-mdx/LegacyDavros/ngs/3.analysis"
 #data_fastq_path="/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/2.fastq"
 data_fastq_path="/data/rds/DMP/DUDMP/TRANSGEN/TIER2/transgen-mdx/003.Fastqs"
 #destination_path="/data/scratch/DMP/DUDMP/TRANSGEN/transgen-mdx/ngs/UKCloud"
@@ -30,9 +30,10 @@ uk_cloud_desination="s3://smpaeds/CMP/WES_auto_tmp/"
 uk_cloud_log_file_desintation="s3://smpaeds/CMP/"
 
 #Compounded vars
-full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
+full_sample_name="$sample_name-$trial_id-T"
+#full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
 
-if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
+if ls $data_fastq_path/$pool/$sample_name* 1> /dev/null 2>&1;
 then
     echo "Fastq file exists, proceeeding with transfer"
 else
@@ -47,7 +48,7 @@ folder_to_send="$destination_path/$pool.$trial_id" #Specific for exome transfer 
 destination_path="$destination_path/$pool.$trial_id/$full_sample_name"
 
 ##Create destination folder
-mkdir $destination_path
+#mkdir $destination_path
 
 ###################
 ## Data transfer ##
@@ -55,7 +56,7 @@ mkdir $destination_path
 
 #Fastqs
 mkdir -p $destination_path/Fastqs
-cp $data_fastq_path/$pool/$full_sample_name*fastq.gz $destination_path/Fastqs/.
+cp $data_fastq_path/$pool/$full_sample_name* $destination_path/Fastqs/.
 
 #X###Send files to UKCloud
 #X#module load anaconda/3/4.4.0
