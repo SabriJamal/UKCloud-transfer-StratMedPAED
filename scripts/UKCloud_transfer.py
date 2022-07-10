@@ -1254,7 +1254,7 @@ class UKCloud(object):
                     #=======================================================
                     try:
                         line_dict[self.t_log_header_ukcloud[0]] = match[self.t_log_header_ukcloud[1]]
-                        if(line_dict[self.t_log_header_ukcloud[0]] == "True"):
+                        if(line_dict[self.t_log_header_ukcloud[0]].lower() == "true"):
                             ready_OUT.write(line + "\n")
                             continue
                     except:
@@ -1278,6 +1278,9 @@ class UKCloud(object):
                     elif(match[self.t_log_header_type[1]] == self.vpanel_relapse_dt):
                         uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_relapse_panel']
                         updated_line_dict = self.full_check_ck1ck2germ(line_dict, match, uk_cloud_transfer_script)
+                    elif(match[self.t_log_header_type[1]] == self.cell_free_dt):
+                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_cell_free_script']
+                        updated_line_dict = self.full_check_ck1ck2(line_dict, match, uk_cloud_transfer_script)
 
                     ## Scan & Update samples checking fastqs.
                     #========================================
@@ -1299,9 +1302,6 @@ class UKCloud(object):
                     elif(match[self.t_log_header_type[1]] == self.low_copy_whole_genome_primary_dt):
                         uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_script_primary_lcwgs']
                         updated_line_dict = self.check_module_calling_checkpoint(line_dict, match, match[self.t_log_header_type[1]], uk_cloud_transfer_script)
-                    elif(match[self.t_log_header_type[1]] == self.cell_free_dt):
-                        uk_cloud_transfer_script = UKCloud.config['file_system_objects']['uk_cloud_transfer_cell_free_script']
-                        updated_line_dict = self.full_check_ck1ck2(line_dict, match, uk_cloud_transfer_script)
 
                     ## Update transfer log
                     #======================
