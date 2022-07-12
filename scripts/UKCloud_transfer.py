@@ -154,7 +154,10 @@ class UKCloud(object):
             #Skip sample sheets modified based on Jira tickets due to commments in header
             elif( re.search("HEL", fso) ):
                 continue
-
+            #Skip all pools that don't follow Pool_<digits>, note that above if's redundant now
+            elif( not fso.replace(".hpc.csv", "").replace("Pool_", "").isdigit() ):
+                continue
+            
             fso_abs_path = os.path.join(sample_sheet_dir, fso)
             ss_dict = {} #holds one sample sheet stored in nested dict glob_ss_dict
 
