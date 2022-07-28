@@ -42,7 +42,7 @@ user="transgen-mdx"
 full_sample_name="$sample_t-$trial_id-T"
 #full_sample_name=$(ls $data_fastq_path/$pool/$sample_name*R1* | rev | cut -d"/" -f1 | rev | cut -d"_" -f1)
 
-if ls $data_fastq_path/$pool/$sample_name*R1* 1> /dev/null 2>&1;
+if ls $data_fastq_path/$pool/$sample_name* 1> /dev/null 2>&1;
 then
     echo "Fastq file exists, proceeeding with transfer"
 else
